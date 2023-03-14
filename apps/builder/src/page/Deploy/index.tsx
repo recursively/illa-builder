@@ -43,8 +43,8 @@ export const Deploy: FC = () => {
           window.open("https://illacloud.com", "_blank")
         }}
       >
-        <span>Powered by</span>
-        <Logo css={logoStyle} />
+        {/* <span>Powered by</span>
+        <Logo css={logoStyle} /> */}
       </div>
     </div>
   )
