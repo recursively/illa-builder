@@ -37,15 +37,15 @@ export const Deploy: FC = () => {
         </div>
       )}
       {!loadingState && <CanvasPanel />}
-      <div
+      {/* <div
         css={deployLogoStyle}
         onClick={() => {
           window.open("https://illacloud.com", "_blank")
         }}
       >
-        {/* <span>Powered by</span>
-        <Logo css={logoStyle} /> */}
-      </div>
+        <span>Powered by</span>
+        <Logo css={logoStyle} />
+      </div> */}
     </div>
   )
 }
