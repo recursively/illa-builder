@@ -4,4 +4,4 @@
 	branch = develop
 [submodule "apps/builder/src/illa-public-component"]
 	path = apps/builder/src/illa-public-component
-	url = https://github.com/illacloud/illa-public-component.git
+	url = https://github.com/recursively/illa-public-component.git
