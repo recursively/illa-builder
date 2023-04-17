@@ -5,22 +5,21 @@ import {
   applyUserAvatarStyle,
   getAvatarStyle,
 } from "@/page/App/components/Avatar/style"
+import { getColorByString } from "@/utils/colorHelper"
 
-const AvatarColors = [
-  "165DFF",
-  "0FC6C2",
-  "06DA38",
-  "A7D100",
-  "F1BE0A",
-  "F9773F",
-  "FF4ACC",
-]
+const getFirstChar = (str: string | undefined) => {
+  if (!str) return "U"
+  const trimStr = str.trim()
+  const regex = /^./u
+  const match = trimStr.match(regex)
+  return match ? match[0].toUpperCase() : "U"
+}
 
 export const Avatar: FC<AvatarProps> = (props) => {
   const { userId, nickname, avatar, showType, type, showTooltips, className } =
     props
-  const avatarBgColor = AvatarColors[(parseInt(`${userId}`) || 0) % 7]
-  const avatarText = nickname?.substring?.(0, 1).toUpperCase() || "U"
+  const avatarBgColor = getColorByString(userId || "")
+  const avatarText = getFirstChar(nickname)
   const node = avatar ? (
     <img
       src={avatar}

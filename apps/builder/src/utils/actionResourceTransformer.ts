@@ -1,4 +1,3 @@
-import i18n from "@/i18n/config"
 import { ActionType } from "@/redux/currentApp/action/actionState"
 import { ResourceType } from "@/redux/resource/resourceState"
 
@@ -55,6 +54,8 @@ export function getActionNameFromActionType(actionType: ActionType): string {
         return "TiDB"
       case "smtp":
         return "SMTP"
+      case "googlesheets":
+        return "Google Sheets"
       case "huggingface":
         return "Hugging Face"
       case "hfendpoint":
@@ -128,6 +129,8 @@ export function getResourceNameFromResourceType(
         return "TiDB"
       case "smtp":
         return "SMTP"
+      case "googlesheets":
+        return "Google Sheets"
       case "hfendpoint":
         return "Hugging Face"
       case "huggingface":

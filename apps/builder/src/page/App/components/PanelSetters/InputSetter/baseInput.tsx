@@ -15,6 +15,7 @@ import { applyInputSetterWrapperStyle } from "./style"
 
 export const BaseInput: FC<BaseInputSetterProps> = (props) => {
   const {
+    className,
     isSetterSingleRow,
     placeholder,
     attrName,
@@ -23,6 +24,9 @@ export const BaseInput: FC<BaseInputSetterProps> = (props) => {
     value,
     widgetDisplayName,
     isInList,
+    labelName,
+    detailedDescription,
+    labelDesc,
   } = props
 
   const listWidgets = useSelector(
@@ -59,6 +63,7 @@ export const BaseInput: FC<BaseInputSetterProps> = (props) => {
   return (
     <div css={applyInputSetterWrapperStyle(isSetterSingleRow, isInList)}>
       <CodeEditor
+        className={className}
         value={finalValue}
         onChange={onChange}
         showLineNumbers={false}
@@ -68,6 +73,8 @@ export const BaseInput: FC<BaseInputSetterProps> = (props) => {
         maxHeight="208px"
         maxWidth="100%"
         codeType={CODE_TYPE.EXPRESSION}
+        modalTitle={labelName}
+        modalDescription={detailedDescription ?? labelDesc}
       />
     </div>
   )

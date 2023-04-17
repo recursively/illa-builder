@@ -17,6 +17,7 @@ import {
 import { CodeEditor } from "@/components/CodeEditor"
 import { CODE_LANG } from "@/components/CodeEditor/CodeMirror/extensions/interface"
 import i18n from "@/i18n/config"
+import { ActionResultProps } from "@/page/App/components/Actions/ActionPanel/ActionResult/interface"
 import {
   actionResultContainerStyle,
   alertBarStyle,
@@ -123,16 +124,19 @@ export const ActionResult = forwardRef<HTMLDivElement, ActionResultProps>(
       )
     }, [t, results?.extraData?.status, runningTimes, onClose, showType])
 
-    const getDisplayData = useCallback(() => {
-      if (!isRestApi) {
-        return results
-      }
-      return showType === "response"
-        ? results?.result
-        : results?.extraData?.headers
-    }, [isRestApi, results, showType])
+    const getDisplayData = useCallback(
+      (result: any) => {
+        if (!isRestApi) {
+          return result
+        }
+        return showType === "response"
+          ? result?.result
+          : result?.extraData?.headers
+      },
+      [isRestApi, showType],
+    )
 
-    const displayData = getDisplayData()
+    const displayData = getDisplayData(results)
 
     return (
       <div css={actionResultContainerStyle}>

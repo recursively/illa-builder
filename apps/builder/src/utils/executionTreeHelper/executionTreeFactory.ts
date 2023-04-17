@@ -4,8 +4,6 @@ import toposort from "toposort"
 import { createMessage } from "@illa-design/react"
 import i18n from "@/i18n/config"
 import { runAction } from "@/page/App/components/Actions/ActionPanel/utils/runAction"
-import { runActionTransformer } from "@/page/App/components/Actions/ActionPanel/utils/runActionTransformerHelper"
-import { LayoutInfo } from "@/redux/currentApp/editor/components/componentsPayload"
 import { getContainerListDisplayNameMappedChildrenNodeDisplayName } from "@/redux/currentApp/editor/components/componentsSelector"
 import {
   DependenciesState,
@@ -317,7 +315,7 @@ export class ExecutionTreeFactory {
     paths.forEach((path) => {
       if (!walkedPath.has(path)) {
         walkedPath.add(path)
-        const rootPath = path.split(".").slice(0, 2).join(".")
+        const rootPath = convertPathToString(toPath(path).slice(0, 2))
         const value = get(rawTree, rootPath, undefined)
         set(currentExecutionTree, rootPath, value)
       }
@@ -389,38 +387,13 @@ export class ExecutionTreeFactory {
     )
 
     this.executedTree = this.validateTree(evaluatedTree)
+    this.executedTree.globalData = evaluatedTree.root.globalData
     return {
       dependencyTree: this.dependenciesState,
       evaluatedTree: this.executedTree,
       errorTree: this.errorTree,
       debuggerData: this.debuggerData,
       independencyTree: this.inDependencyTree,
-    }
-  }
-
-  updateWidgetLayoutInfo(rawTree: RawTreeShape) {
-    const currentRawTree = cloneDeep(rawTree)
-    this.oldRawTree = cloneDeep(rawTree)
-    const currentExecutedTree = cloneDeep(this.executedTree)
-    const displayNameMapLayoutInfo: Record<string, LayoutInfo> = {}
-    Object.values(currentRawTree).forEach((seed) => {
-      if (isWidget(seed)) {
-        const { displayName, $layoutInfo } = seed
-        displayNameMapLayoutInfo[displayName] = $layoutInfo
-      }
-    })
-
-    Object.keys(displayNameMapLayoutInfo).forEach((key) => {
-      const layoutInfo = displayNameMapLayoutInfo[key]
-      if (currentExecutedTree[key]) {
-        currentExecutedTree[key].$layoutInfo = layoutInfo
-      }
-    })
-
-    this.executedTree = currentExecutedTree
-
-    return {
-      evaluatedTree: this.executedTree,
     }
   }
 
@@ -516,6 +489,7 @@ export class ExecutionTreeFactory {
     this.mergeErrorTree(errorTree, [...updatePaths, ...orderPath])
     this.mergeDebugDataTree(debuggerData, [...updatePaths, ...orderPath])
     this.executedTree = this.validateTree(evaluatedTree)
+
     return {
       evaluatedTree: this.executedTree,
       errorTree: this.errorTree,
@@ -672,17 +646,6 @@ export class ExecutionTreeFactory {
               if (currentDynamicString.includes(widgetOrAction.displayName)) {
                 return current
               }
-            }
-            if (
-              widgetOrAction.actionType === "transformer" &&
-              !reduxActionType?.isUpdateActionReduxAction
-            ) {
-              let calcResult = runActionTransformer(
-                widgetOrAction,
-                current,
-                false,
-              )
-              set(current, `${widgetOrAction.displayName}.value`, calcResult)
             }
             if (
               widgetOrAction.actionType !== "transformer" &&

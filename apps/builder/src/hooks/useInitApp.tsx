@@ -1,4 +1,3 @@
-import { AxiosResponse } from "axios"
 import { useCallback, useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useParams } from "react-router-dom"
@@ -18,8 +17,29 @@ import { DashboardAppInitialState } from "@/redux/dashboard/apps/dashboardAppSta
 import { resourceActions } from "@/redux/resource/resourceSlice"
 import { Resource, ResourceContent } from "@/redux/resource/resourceState"
 import { getCurrentTeamInfo } from "@/redux/team/teamSelector"
+import store from "@/store"
 import { canAutoRunActionWhenInit } from "@/utils/action/canAutoRunAction"
 import { DisplayNameGenerator } from "@/utils/generators/generateDisplayName"
+
+export const updateCurrentAppInfo = (
+  data: CurrentAppResp,
+  mode: IllaMode,
+  appId: string,
+  teamID: string,
+  uid: string,
+) => {
+  store.dispatch(configActions.updateIllaMode(mode))
+  store.dispatch(appInfoActions.updateAppInfoReducer(data.appInfo))
+  store.dispatch(componentsActions.updateComponentReducer(data.components))
+  store.dispatch(actionActions.updateActionListReducer(data.actions))
+
+  DisplayNameGenerator.initApp(appId, teamID, uid)
+  DisplayNameGenerator.updateDisplayNameList(data.components, data.actions)
+  store.dispatch(executionActions.startExecutionReducer())
+  if (mode === "edit" && data.actions.length > 0) {
+    store.dispatch(configActions.changeSelectedAction(data.actions[0]))
+  }
+}
 
 export const useInitBuilderApp = (mode: IllaMode) => {
   const { appId = "" } = useParams()
@@ -29,6 +49,7 @@ export const useInitBuilderApp = (mode: IllaMode) => {
   const { teamIdentifier } = useParams()
 
   const [loadingState, setLoadingState] = useState(true)
+  const [errorState, setErrorState] = useState(false)
 
   // versionId = -1 represents the latest edited version of the app.
   // versionId = -2 represents the latest released version of the user.
@@ -42,25 +63,22 @@ export const useInitBuilderApp = (mode: IllaMode) => {
   useDestroyApp()
 
   const handleCurrentApp = useCallback(
-    (response: AxiosResponse<CurrentAppResp>) => {
-      dispatch(configActions.updateIllaMode(mode))
-      dispatch(appInfoActions.updateAppInfoReducer(response.data.appInfo))
-      dispatch(
-        componentsActions.updateComponentReducer(response.data.components),
-      )
-      dispatch(actionActions.updateActionListReducer(response.data.actions))
-
-      DisplayNameGenerator.initApp(appId, teamID, uid)
-      DisplayNameGenerator.updateDisplayNameList(
-        response.data.components,
-        response.data.actions,
-      )
-      dispatch(executionActions.startExecutionReducer())
-      if (mode === "edit" && response.data.actions.length > 0) {
-        dispatch(configActions.changeSelectedAction(response.data.actions[0]))
-      }
+    (data: CurrentAppResp) => {
+      updateCurrentAppInfo(data, mode, appId, teamID, uid)
     },
-    [appId, dispatch, mode, teamID, uid],
+    [mode, appId, teamID, uid],
+  )
+
+  const checkAppStatus = useCallback(
+    (controller: AbortController) => {
+      // don't use asyncTeamRequest here, because we need to mock the team info
+      return BuilderApi.asyncTeamIdentifierRequest<{ isPublic: boolean }>({
+        url: `/publicApps/${appId}/isPublic`,
+        method: "GET",
+        signal: controller.signal,
+      })
+    },
+    [appId],
   )
 
   const initPublicApp = useCallback(
@@ -97,7 +115,7 @@ export const useInitBuilderApp = (mode: IllaMode) => {
             dispatch(resourceActions.updateResourceListReducer(response.data))
           },
         )
-        handleCurrentApp(response)
+        handleCurrentApp(response.data)
         resolve(response.data)
       } catch (e) {
         reject(e)
@@ -124,6 +142,7 @@ export const useInitBuilderApp = (mode: IllaMode) => {
       } catch (e) {
         reject("failure")
         if (e === "have no team match") {
+          setErrorState(true)
           throw new Error(e)
         }
       }
@@ -135,14 +154,15 @@ export const useInitBuilderApp = (mode: IllaMode) => {
     const controller = new AbortController()
     if (isOnline) {
       new Promise<CurrentAppResp>(async (resolve, reject) => {
+        setErrorState(false)
         setLoadingState(true)
         if (mode === "production") {
-          try {
+          const publicState = await checkAppStatus(controller)
+          if (publicState.data.isPublic) {
             const response = await initPublicApp(controller)
-            handleCurrentApp(response)
+            handleCurrentApp(response.data)
             resolve(response.data)
-          } catch (error: any) {
-            console.log(error, "error")
+          } else {
             await handleUnPublicApps(controller, resolve, reject)
           }
         } else {
@@ -173,7 +193,9 @@ export const useInitBuilderApp = (mode: IllaMode) => {
     handleCurrentApp,
     handleUnPublicApps,
     initApp,
+    checkAppStatus,
+    initPublicApp,
   ])
 
-  return loadingState
+  return { loadingState, errorState }
 }

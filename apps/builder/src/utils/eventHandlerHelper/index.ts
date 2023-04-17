@@ -21,6 +21,8 @@ import { ILLARoute } from "@/router"
 import store from "@/store"
 import { evaluateDynamicString } from "@/utils/evaluateDynamicString"
 import { isDynamicString } from "@/utils/evaluateDynamicString/utils"
+import { downloadFileFromEventHandler } from "@/utils/file"
+import { LIMIT_MEMORY, estimateMemoryUsage } from "../calculateMemoryUsage"
 
 const message = createMessage()
 
@@ -55,6 +57,73 @@ export const transformEvents = (
       enabled,
     }
   }
+  if (actionType === "setGlobalState") {
+    const {
+      stateDisplayName,
+      enabled,
+      globalStateMethod,
+      globalStateValue,
+      globalStateKeyPath,
+    } = event
+    switch (globalStateMethod) {
+      case "setIn": {
+        const params = {
+          key: stateDisplayName,
+          path: globalStateKeyPath,
+          value: globalStateValue,
+        }
+
+        return {
+          script: () => {
+            store.dispatch(
+              executionActions.setInGlobalStateInExecutionReducer(params),
+            )
+          },
+          enabled,
+        }
+      }
+      case "setValue": {
+        const params = { key: stateDisplayName, value: globalStateValue }
+
+        return {
+          script: () => {
+            store.dispatch(
+              executionActions.setGlobalStateInExecutionReducer(params),
+            )
+          },
+          enabled,
+        }
+      }
+    }
+  }
+  if (actionType === "setLocalStorage") {
+    const { enabled, localStorageMethod } = event
+    switch (localStorageMethod) {
+      case "clear": {
+        return {
+          script: () => {
+            store.dispatch(
+              executionActions.clearLocalStorageInExecutionReducer(),
+            )
+          },
+          enabled,
+        }
+      }
+      case "setValue": {
+        const { localStorageKey, localStorageValue } = event
+        const params = { key: localStorageKey, value: localStorageValue }
+
+        return {
+          script: () => {
+            store.dispatch(
+              executionActions.setLocalStorageInExecutionReducer(params),
+            )
+          },
+          enabled,
+        }
+      }
+    }
+  }
 
   if (actionType === "copyToClipboard") {
     const { copiedValue, enabled } = event
@@ -67,6 +136,16 @@ export const transformEvents = (
         ) {
           message.info({
             content: i18n.t("empty_copied_tips"),
+          })
+          return
+        }
+        const memorySize = estimateMemoryUsage(copiedValue)
+        if (LIMIT_MEMORY < memorySize) {
+          message.info({
+            content: i18n.t("editor.global.size_exceed", {
+              current_size: memorySize,
+              limit_size: LIMIT_MEMORY,
+            }),
           })
           return
         }
@@ -153,24 +232,37 @@ export const transformEvents = (
       enabled,
     }
   }
+  if (actionType === "downloadFile") {
+    const { fileData, fileType, fileName } = event
+
+    return {
+      script: () => {
+        if ([undefined, null, ""].includes(fileData)) {
+          return
+        }
+        downloadFileFromEventHandler(fileType, fileName, fileData)
+      },
+    }
+  }
   if (actionType === "widget") {
     const { widgetID, widgetMethod, enabled } = event
     if (
       [
         "setValue",
+        "setSelectedValue",
         "setVolume",
         "setVideoUrl",
+        "setAudioUrl",
         "setImageUrl",
         "setFileUrl",
         "setStartValue",
         "setPrimaryValue",
         "setEndValue",
-        "setDisabled",
         "setSpeed",
-        "setLoop",
         "seekTo",
-        "showControls",
-        "mute",
+        "setStartOfRange",
+        "setEndOfRange",
+        "setMarkers",
       ].includes(widgetMethod)
     ) {
       const { widgetTargetValue } = event
@@ -179,6 +271,20 @@ export const transformEvents = (
           const method = get(globalData, `${widgetID}.${widgetMethod}`, null)
           if (method) {
             method(widgetTargetValue)
+          }
+        },
+        enabled,
+      }
+    }
+    if (
+      ["setDisabled", "setLoop", "showControls", "mute"].includes(widgetMethod)
+    ) {
+      const { widgetSwitchTargetValue } = event
+      return {
+        script: () => {
+          const method = get(globalData, `${widgetID}.${widgetMethod}`, null)
+          if (method) {
+            method(widgetSwitchTargetValue)
           }
         },
         enabled,
@@ -195,7 +301,9 @@ export const transformEvents = (
       widgetMethod === "rowSelect" ||
       widgetMethod === "resetPrimaryValue" ||
       widgetMethod === "slickNext" ||
-      widgetMethod === "slickPrevious"
+      widgetMethod === "slickPrevious" ||
+      widgetMethod === "resetValue" ||
+      widgetMethod === "resetMarkers"
     ) {
       return {
         script: `{{${widgetID}.${widgetMethod}()}}`,

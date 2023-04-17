@@ -4,6 +4,7 @@ export interface CurrentUser {
   language: string
   email: string
   avatar?: string
+  isTutorialViewed?: boolean
 }
 
 export interface UserInfoResponse {
@@ -15,6 +16,8 @@ export interface UserInfoResponse {
   language: string
   createdAt: string
   updatedAt: string
+  userID: string
+  isTutorialViewed: boolean
 }
 
 export const CurrentUserInitialState: CurrentUser = {

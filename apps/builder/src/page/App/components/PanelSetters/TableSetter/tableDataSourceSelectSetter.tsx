@@ -9,6 +9,7 @@ import { searchDSLByDisplayName } from "@/redux/currentApp/editor/components/com
 import {
   getActionExecutionResult,
   getExecutionError,
+  getExecutionResult,
 } from "@/redux/currentApp/executionTree/executionSelector"
 import { RootState } from "@/store"
 import { evaluateDynamicString } from "@/utils/evaluateDynamicString"
@@ -27,12 +28,13 @@ export const TableDataSourceSelectSetter: FC<TableDataSourceSetterProps> = (
     widgetDisplayName,
     labelName,
     labelDesc,
+    detailedDescription,
     handleUpdateDsl,
     handleUpdateMultiAttrDSL,
   } = props
 
   const actions = useSelector(getActionList)
-  const actionExecutionResult = useSelector(getActionExecutionResult)
+  const executionResult = useSelector(getExecutionResult)
   const isError = useSelector<RootState, boolean>((state) => {
     const errors = getExecutionError(state)
     const thisError = get(errors, `${widgetDisplayName}.dataSource`)
@@ -72,12 +74,16 @@ export const TableDataSourceSelectSetter: FC<TableDataSourceSetterProps> = (
       oldKeyMap[item.accessorKey] = item
       oldKeyOrder.push(item.accessorKey)
     })
-    if (!Array.isArray(finalValue)) return
-    const newColumns = tansDataFromOld(finalValue, oldKeyMap, oldKeyOrder)
+    let data
+    try {
+      data = evaluateDynamicString("", finalValue, executionResult)
+    } catch (e) {}
+    if (!Array.isArray(data)) return
+    const newColumns = tansDataFromOld(data, oldKeyMap, oldKeyOrder)
     if (newColumns?.length && !isEqual(newColumns, columns)) {
       handleUpdateMultiAttrDSL?.({ columns: newColumns })
     }
-  }, [finalValue])
+  }, [columns, executionResult, finalValue, handleUpdateMultiAttrDSL])
 
   const selectedOptions = useMemo(() => {
     return actions.map((action) => ({
@@ -107,7 +113,7 @@ export const TableDataSourceSelectSetter: FC<TableDataSourceSetterProps> = (
 
   const getNewColumn = useCallback(
     (value: string) => {
-      const data = evaluateDynamicString("", value, actionExecutionResult)
+      const data = evaluateDynamicString("", value, executionResult)
       if (Array.isArray(data)) {
         let newColumns = tansTableDataToColumns(data)
         if (newColumns?.length) {
@@ -119,7 +125,7 @@ export const TableDataSourceSelectSetter: FC<TableDataSourceSetterProps> = (
         }
       }
     },
-    [actionExecutionResult, customColumns],
+    [customColumns, executionResult],
   )
 
   const handleChangeInput = useCallback(
@@ -136,7 +142,7 @@ export const TableDataSourceSelectSetter: FC<TableDataSourceSetterProps> = (
         dataSourceJS: value,
       })
     },
-    [actionExecutionResult, customColumns, handleUpdateMultiAttrDSL],
+    [getNewColumn, handleUpdateMultiAttrDSL],
   )
 
   const handleChangeSelect = useCallback(
@@ -153,7 +159,7 @@ export const TableDataSourceSelectSetter: FC<TableDataSourceSetterProps> = (
         dataSource: value,
       })
     },
-    [actionExecutionResult, customColumns, handleUpdateMultiAttrDSL],
+    [getNewColumn, handleUpdateMultiAttrDSL],
   )
 
   return (
@@ -171,6 +177,7 @@ export const TableDataSourceSelectSetter: FC<TableDataSourceSetterProps> = (
         value={finalValue}
         labelName={labelName}
         labelDesc={labelDesc}
+        detailedDescription={detailedDescription}
         isError={isError}
       />
     </div>

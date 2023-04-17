@@ -143,6 +143,9 @@
           },
           "oracle": {
             "oracle": "Oracle DB"
+          },
+          "gs": {
+            "google_sheets": "Google Sheets"
           }
         },
         "validate": {
@@ -175,6 +178,26 @@
           "restapi": {
             "certificates": "证书",
             "verification_mode": "验证方式"
+          },
+          "gs": {
+            "private_key": "私钥",
+            "action_type": "操作类型",
+            "spreadsheet": "电子表格",
+            "sheet_name": "工作表名称",
+            "data_range": "数据范围",
+            "limit": "Limit",
+            "offset": "Offset",
+            "a1_notation": "A1表示法",
+            "values_to_append": "待新增的值",
+            "filter_by": "筛选条件",
+            "update_value": "待更新的值",
+            "primary_key_column": "主键列名",
+            "array_of_rows_to_upd": "待更新的行数据的数组",
+            "filters_to_match_row": "Filters to match row",
+            "consider_queries_tha": "将不删除任何行的查询视为成功",
+            "title_of_spreadsheet": "电子表格的标题",
+            "sheet_id_to_copy": "要复制的工作表ID",
+            "sheet_to_copy_to": "要复制到的工作表"
           }
         },
         "placeholder": {
@@ -200,6 +223,20 @@
           "oracle": {
             "username": "oracle",
             "password": "••••••••"
+          },
+          "gs": {
+            "private_key": "{\r\n  \"type\": \"service_account\",\r\n  \"project_id\": \"projectId\",\r\n  \"private_key_id\": \"privateKeyId\",\r\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\r\nprivateKey\r\n-----END PRIVATE KEY-----\",\r\n  \"client_email\": \"clientEmail\",\r\n  \"client_id\": \"100000000000000000000\",\r\n  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\r\n  \"token_uri\": \"https://oauth2.googleapis.com/token\",\r\n  \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\r\n  \"client_x509_cert_url\": \"clientx509CertUrl\"\r\n}",
+            "row_filter": {
+              "column_name": "column_name",
+              "value": "值"
+            },
+            "update_value": "{{ [ {\r\n\"column1\":\"newValue1\",\r\n\"column2\":\"newValue2\"\r\n} ] }}",
+            "primary_key_column": "column_name",
+            "array_of_rows_to_upd": "{{ table1.recordUpdates }}",
+            "filters_to_match_row": {
+              "key": "键值",
+              "value": "值"
+            }
           }
         },
         "tips": {
@@ -215,6 +252,18 @@
             "verification_mode": {
               "skip_ca_certificate": "您的服务器可能容易受到攻击"
             }
+          },
+          "gs": {
+            "private_key": "用于连接到 Google 表格。 单击<0>此处</0>创建项目并获取 OAuth 凭据。 通过服务帐户身份验证，我们将只能访问您使用与所用服务帐户对应的电子邮件地址共享的电子表格。 有关创建服务帐户和访问密钥的文档，请参阅<1>此处</1>。用户可能会遇到不受表格控制的不同处理组件的限制。 详细了解<2>配额限制</2>",
+            "leave_blank_to_selec": "留空以选择第一张表",
+            "to_select_the_first_": "To select the first five cells in the first column of a sheet titled sheet1, A1 notation is sheet1!A1:A5. <0>See Google's docs for more information. <0>",
+            "values_to_append": "{{ [ {\r\n\"column1\":\"newValue1\",\r\n\"column2\":\"newValue2\"\r\n} ] }}",
+            "a1_notation": "要选择标题为 sheet1 的工作表第一列中的前五个单元格，A1 表示法是 sheet1!A1:A5。 <0>有关详细信息，请参阅 Google 文档。 <0>",
+            "sheet_id_to_copy": "通过查看 Google 表格 URL 中的 ?gid=123123 找到它",
+            "copy_to_sheet_name": "必填。重命名复制后的表"
+          },
+          "tidb": {
+            "ca_certificate": "我们默认填写用于与无服务器层的TLS连接的证书。如需与专用层的TLS连接，<0>点击这里</0>查看配置方法"
           }
         },
         "option": {
@@ -268,11 +317,37 @@
               "verify_ca_certificat": "验证服务端证书",
               "skip_ca_certificate_": "跳过服务端证书验证"
             }
+          },
+          "gs": {
+            "action_type": {
+              "read_data_from_a_spr": "从电子表格中读取数据",
+              "append_data_to_a_spr": "将数据附加到电子表格",
+              "update_a_spreadsheet": "更新电子表格",
+              "bulk_update_a_spread": "通过主键批量更新电子表格",
+              "delete_a_single_row_": "更新电子表格",
+              "create_a_spreadsheet": "创建电子表格",
+              "copy_a_single_sheet_": "将单个工作表复制到另一个电子表格",
+              "list_available_sprea": "列出可用电子表格",
+              "get_spreadsheet_info": "获取电子表格信息"
+            },
+            "data_range": {
+              "use_a1_notation": "使用 A1 表示法",
+              "use_limit_and_offset": "使用限制和偏移量"
+            },
+            "filter_by": {
+              "use_a1_notation": "使用 A1 表示法",
+              "use_row_filters": "使用行过滤器"
+            }
           }
         },
         "default": {
           "appwrite": {
             "limit": " {{ 1000 }}"
+          }
+        },
+        "group": {
+          "gs": {
+            "service_account": "服务账户"
           }
         }
       },
@@ -284,7 +359,8 @@
           "run": "运行",
           "save": "保存",
           "save_and_run": "保存 & 运行",
-          "save_fail": "保存失败"
+          "save_fail": "保存失败",
+          "test_run": "测试运行"
         },
         "elastic": {
           "action_type": "Action Type",
@@ -360,7 +436,7 @@
               "dig": "delegated-by",
               "us-east-1": "us-east-1",
               "authenticate_using_t": "Authenticate using the HTTP Authorization header instead of query parameters",
-              "find_instructions_on": "Find instructions on where to find access keys <0>in the AWS docs<0>.",
+              "find_instructions_on": "<0>在 AWS 文档</0>中找到关于在哪里可以找到访问密钥的说明。",
               "role_to_assume": "Use a <0>different role<0> when accessing the API"
             }
           },
@@ -918,7 +994,20 @@
       "actions_title": "ACTIONS 列表 ",
       "components_title": "组件列表 ",
       "globals_title": "全局变量 ",
-      "pages_title": "页面列表"
+      "pages_title": "页面列表",
+      "global_data_modal": {
+        "title": "编辑全局变量",
+        "variable_name": {
+          "tooltips": "Use the initial value in this app via {{variableName}}",
+          "label": "变量名",
+          "message": "请输入变量名称"
+        },
+        "initial_value": {
+          "label": "初期値",
+          "tooltips": "支持对象或原始值。 示例：{ 计数：0 }",
+          "placeholder": "{ count: 0 }"
+        }
+      }
     },
     "deploy": {
       "fail": "部署失败"
@@ -1009,7 +1098,9 @@
           "pause": "暂停",
           "ended": "已结束",
           "loaded": "已载入",
-          "rowSelect": "选择行"
+          "rowSelect": "选择行",
+          "markerSelected": "选中点",
+          "markerCreated": "创建点"
         },
         "image_list": {
           "title": "图片",
@@ -1054,6 +1145,13 @@
         "size_type": {
           "kb": "KB",
           "mb": "MB"
+        },
+        "time_picker": {
+          "select_time": "请选择时间"
+        },
+        "time_range": {
+          "start_placeholder": "开始时间",
+          "end_placeholder": "时间结束"
         }
       },
       "setter_group": {
@@ -1080,7 +1178,7 @@
         "border": "描边",
         "color": "颜色",
         "icon": "图标",
-        "secondary_value": "SECONDARY VALUE"
+        "secondary_value": "次要值"
       },
       "setter_label": {
         "action": "动作",
@@ -1200,7 +1298,9 @@
         "scale_type": "缩放类型",
         "set_router": "设置路由",
         "set_temporary_state": "设置临时状态",
-        "shadow": "阴影",
+        "shadow": {
+          "shadow": "阴影"
+        },
         "show_character_count": "展示字符数量",
         "show_clear_button": "展示清除按钮",
         "show_footer": "显示操作区",
@@ -1257,12 +1357,12 @@
         "max_size": "最大文件大小",
         "min_size": "最小文件大小",
         "text_overflow": "文本溢出",
-        "file_url": "文件URL",
+        "file_url": "PDF数据源",
         "show_tool_bar": "显示工具栏",
         "scale": "缩放页面",
         "scroll": "快速滚动到每一页",
         "min_max_size": "最小～最大文件大小",
-        "video_url": "视频 URL",
+        "video_url": "视频数据源",
         "autoplay": "自动播放",
         "loop": "循环播放",
         "volume": "音量",
@@ -1291,13 +1391,53 @@
           "collapse_icon": "折叠面板",
           "icon_color": "颜色"
         },
-        "choose_at_least": "Choose at least",
-        "choose_up_to": "Choose up to",
+        "choose_at_least": "最少选择",
+        "choose_up_to": "最多选择",
         "copy_to_clipboard": "复制到剪贴板",
         "file_download": {
-          "file_data": "File data",
-          "file_name": "File name with extension",
-          "file_type": "File type"
+          "file_data": "文件数据",
+          "file_name": "带扩展名的文件名",
+          "file_type": "文件类型"
+        },
+        "action_name": "查询名称",
+        "variable": {
+          "path_of_value": "值的路径",
+          "variable": "全局变量"
+        },
+        "code": {
+          "write_code": "编写代码"
+        },
+        "slider": {
+          "step_size": "步进值",
+          "minimum": "最小值",
+          "maximum": "最大值",
+          "hide_output": "隐藏输出数值",
+          "prefix_icon": "前缀图标",
+          "suffix_icon": "后置图标",
+          "allow_wrapping": "自动换行"
+        },
+        "range_slider": {
+          "start_value": "起始值",
+          "end_value": "结束值"
+        },
+        "name": "名称",
+        "audio": {
+          "audio_url": "音频数据源"
+        },
+        "map": {
+          "markers": "标记",
+          "initial_location": "初始位置",
+          "default_markers": "默认标记",
+          "latitude_field_name": "纬度字段名称",
+          "longitude_field_name": "经度字段名称",
+          "zoom": "缩放",
+          "enable_add_markers": "允许添加标记",
+          "enable_search_locati": "允许搜索位置",
+          "enable_clustering": "允许点聚集"
+        },
+        "time_range": {
+          "start_time": "开始时间",
+          "end_time": "结束时间"
         }
       },
       "setter_tooltip": {
@@ -1338,7 +1478,7 @@
         "file_url": "支持网络上的 PDF URL，或 pdf 文件的 base64 编码数据。 例如：{{ data:application/pdf;base64, example-data }}",
         "scale": "缩放每个页面以填充组件的宽度或高度。",
         "scroll": "滚动时自动定位到每页的开头。",
-        "video_url": "支持大多数视频服务或任何常见视频文件类型的直接链接。",
+        "video_url": "支持大多数视频服务或任何常见视频文件类型的直接链接或视频文件的base64编码数据。 例如：{{ data:audio/mp4;base64,exampleDate}}",
         "collapse": {
           "type": "折叠面板列表：列表模式，每项的组件样式一致，可通过{{ currentItem.columnName }}指定每个项中组件的数据；折叠面板：各个面板独立，可分别指定每项的组件样式和数据。",
           "items": "项目数量",
@@ -1362,7 +1502,61 @@
           "data_source": "使用映射值定义图片的数据源。 可以使用数组，或把对象应设为数组。 例如：{{[{ x:1, y:1 },{ x:2, y:2 },...]}} 。 您还可以在操作中使用数据。 例如：{{ mysql1.data }}"
         },
         "file_download": {
-          "file_data": "Support base64 data, raw data, mapped data of table. "
+          "file_data": "支持Base64编码数据、表格的原始数据或映射数据"
+        },
+        "variable": {
+          "available_in_objects": "在对象和数组中可用。 要以对象格式设置变量的值，请使用 attributeName。 例如，要更改 {\"a\":1, \"b\":2} 中 \"b\" 的值，路径\n  应该是b。\n\n要以数组格式设置变量的值，请使用 {{index}}。 例如，要将 \"d\" 更改为 \"t\" [\"a\",\"b\",\"c\",\"d\"]，路径应为 {{ 3 }} 或 {{globalData.state1.indexOf(\"d “）}}。",
+          "the_target_value": "目标值"
+        },
+        "slider": {
+          "default_value": "滑块的初始值。 您可以通过在 {{}} 中键入 JavaScript 来动态更改初始值。",
+          "minimum": "滑块的最小值",
+          "maximum": "滑块的最大值",
+          "step_size": "滑块的最小变化单位",
+          "label": "显示给用户的字段名称",
+          "caption": "用于详细描述字段的标题",
+          "hide_label": "设置是否显示标签",
+          "allow_wrapping": "设置是否允许标签换行",
+          "position": "设置标签相对于组件的位置",
+          "alignment": "设置标签的对齐方式",
+          "width": "当标签在组件左侧时，设置标签的宽度比例",
+          "prefix_icon": "显示在组件前面的图标",
+          "suffix_icon": "组件后显示的图标",
+          "hide_output": "设置滑动时是否隐藏值"
+        },
+        "step": {
+          "default_step": "默认步骤",
+          "show_step_number": "显示步骤数值",
+          "indicate_completed_steps": "标明完成步骤"
+        },
+        "range_slider": {
+          "start_value": "设置范围的最小值",
+          "end_value": "设置范围的最大值"
+        },
+        "audio": {
+          "audio_url": "支持直接链接到任何常见的音频文件类型或链接到某些音频服务或音频文件的 base64 编码数据。 例如：{{ data:audio/mp3;base64,exampleDate}}"
+        },
+        "map": {
+          "markers": "在地图上设置标记。 标记应该是与默认标记具有相同属性的对象数组。",
+          "initial_location": "初始化地图时，默认居中显示位置",
+          "default_markers": "初始化地图时显示的默认标记。 您可以使用 {{}} 中的 JavaScript 对其进行动态设置。",
+          "latitude_field_name": "纬度取自初始位置和默认标记对象的哪个属性。",
+          "longitude_field_name": "经度取自初始位置和默认标记对象的哪个属性。",
+          "zoom": "设置地图缩放",
+          "enable_add_markers": "是否允许用户通过点击地图添加标记",
+          "enable_search_locati": "是否允许用户搜索位置",
+          "enable_clustering": "地图缩小时是否允许多个标记聚合"
+        },
+        "time_picker": {
+          "format": "一个有效的时间格式字符串。 有关格式的更多信息：[dayJS](https://day.js.org/docs/en/parse/string-format)",
+          "the_span_of_the_valu": "分钟的跨度",
+          "show_a_clear_button_": "当鼠标悬停在组件上时显示一个清除按钮。"
+        },
+        "time_range": {
+          "start_time": "组件初始化时填入的开始时间",
+          "end_time": "组件初始化时填入的结束时间",
+          "start_placeholder": "当没有输入开始时间时，展示的信息。",
+          "end_placeholder": "当没有输入结束时间时，展示的信息。"
         }
       },
       "setter_option": {
@@ -1378,8 +1572,8 @@
           "collapsible_panel": "折叠面板"
         },
         "file_download": {
-          "auto": "Auto",
-          "plain_text": "Plain text",
+          "auto": "自动",
+          "plain_text": "纯文本",
           "jpeg": "JPEG",
           "png": "PNG",
           "svg": "SVG",
@@ -1387,6 +1581,12 @@
           "csv": "CSV",
           "tsv": "TSV",
           "excel": "Excel(.xlsx)"
+        },
+        "shadow": {
+          "none": "无",
+          "large": "大",
+          "medium": "中",
+          "small": "小"
         }
       },
       "setter_placeholder": {
@@ -1407,6 +1607,9 @@
         "file_download": {
           "file_data": "{{ mysql1.data }}",
           "file_name": "{{ new_data.csv }}"
+        },
+        "variable": {
+          "abc": "{{abc.a}}"
         }
       },
       "setter_tootip": {
@@ -1414,7 +1617,21 @@
       },
       "setter_message": {
         "choose_at_least": "Please choose at lease {{ min }} options.",
-        "choose_up_to": "Please choose up to {{max}} options."
+        "choose_up_to": "Please choose up to {{max}} options.",
+        "map": {
+          "zoom": "请设置一个介于 1 和 22 之间的值"
+        },
+        "upload": {
+          "size_exceed": "超过 500MB 的文件可能无法解析。",
+          "single_file": "只允许一个文件。",
+          "file": "サポートされていないファイル タイプは削除されます",
+          "directory": "只允许目录。"
+        }
+      },
+      "setter_description": {
+        "code": {
+          "write_code": "在这里写下你的代码。 在 {{ }} 中使用 JavaScript"
+        }
       }
     },
     "page": {
@@ -1486,7 +1703,7 @@
     },
     "method": {
       "set_hidden": "Set hidden",
-      "set_file_url": "Set file URL",
+      "set_file_url": "Set PDF source",
       "play": "播放",
       "pause": "暂停",
       "seek_to": {
@@ -1494,7 +1711,7 @@
         "unit": "(s)"
       },
       "set_video_url": {
-        "video": "视频 URL"
+        "video": "视频数据源"
       },
       "speed": {
         "speed": "倍速",
@@ -1527,12 +1744,26 @@
         "showPrevious": "显示上一个可见图像"
       },
       "file_download": {
-        "download": "Download",
+        "download": "下载",
         "message": {
           "suc": "开始下载",
           "fail": "请求失败",
           "download_failed": "下载失败"
         }
+      },
+      "setGlobalData": "设置全局变量",
+      "setLocalStorage": "设置本地存储数据",
+      "audio": {
+        "set_audio_url": "设置音频数据源"
+      },
+      "map": {
+        "marker_selected": "选择标记",
+        "marker_created": "创建标记",
+        "markers_changed": "更改标记"
+      },
+      "time_range": {
+        "setstarttime": "setStartTime",
+        "setendtime": "setEndTime"
       }
     },
     "tutorial": {
@@ -1546,7 +1777,7 @@
             "templates": "模板"
           },
           "onboarding_app": {
-            "name": "Onboarding app",
+            "name": "新手引导",
             "description": "跟着 ILLA 的教程学习如何构建应用程序",
             "action": "开始"
           },
@@ -1565,25 +1796,25 @@
             "list": "使用列表组件显示和管理信息"
           },
           "modal": {
-            "title": "新建应用并部署",
+            "title": "复制并部署",
             "placeholder": "应用名称",
             "cancel": "取消",
-            "fork": "新建应用并部署"
+            "fork": "复制并部署"
           }
         },
         "onboarding_app": {
           "drag_input": "第 1 步：将输入组件拖到此处",
           "drag_button": "第 2 步：将按钮组件拖到此处",
           "drag_table": "第 3 步：将表格组件拖到此处",
-          "exit": "退出引导",
-          "do_it": "帮我完成该步骤",
+          "exit": "中止",
+          "do_it": "帮我完成",
           "drag_title": "将组件拖到画布中",
           "modify_action_title": "修改ACTION",
-          "modify_action_description_modify": "修改ACTION以获取数据。 我们可以使用 {{input1.value}} 来获取输入到输入组件中的数据。",
+          "modify_action_description_modify": "修改ACTION以获取数据。 我们可以使用 {{input1.value}} 来获取输入到输入组件中的数据。\n\nselect * from users\njoin orders\non users.id = orders.id\nwhere {{!input1.value}} or lower(users.name) like '% {{input1.value.toLowerCase()}}%'",
           "modify_action_description_click": "单击保存，然后单击运行",
           "display_data_title": "在表格中显示数据",
           "display_data_description_select": "选择画布中的表格",
-          "display_data_description_modify": "修改右侧面板上的数据源。 我们可以使用 {{postgre1.data}} 来获取数据。",
+          "display_data_description_modify": "修改右侧面板上的数据源。 我们可以使用 {{postgresql1.data}} 来获取数据。",
           "event_handler_title": "点击按钮触发动作",
           "event_handler_description_1": "选择画布里的按钮",
           "event_handler_description_2": "添加事件处理器",
@@ -1595,9 +1826,13 @@
           "test_it_button": "下一步",
           "congratulations_title": "恭喜🎉",
           "congratulations_description": "您刚刚构建了您的第一个应用程序。 如果您在使用过程中有任何疑问，可以通过<0>Discord<0>联系我们",
-          "congratulations_button": "完成"
+          "congratulations_button": "完成",
+          "event_handler_description_all": "1. Add an event handler\r\n2. Click the event handler\r\n3. Change the action to trigger action\r\n4. Change the Query to postgresql1"
         }
       }
+    },
+    "global": {
+      "size_exceed": "数据大小超出限制（当前大小：{{current_size}} 字节，限制： {{limit_size}} 字节）"
     }
   },
   "exit_preview": "退出预览",
@@ -1941,10 +2176,35 @@
       "name": "Collapse"
     },
     "multiselect": {
-      "name": "Multiselect"
+      "name": "多项选择"
     },
     "carousel": {
       "name": "轮播图"
+    },
+    "step": {
+      "name": "步骤"
+    },
+    "slider": {
+      "name": "滑块"
+    },
+    "range_slider": {
+      "name": "范围滑块"
+    },
+    "audio": {
+      "name": "音频播放器",
+      "no_audio": "无音频"
+    },
+    "collaborative": {
+      "no_name": "空用户名"
+    },
+    "map": {
+      "name": "地图"
+    },
+    "time_picker": {
+      "name": "时间选择器"
+    },
+    "time_range": {
+      "name": "时间范围选择器"
     }
   },
   "page": {
@@ -2309,8 +2569,16 @@
           "description": "按照 ILLA 的教程学习如何构建应用程序，这大约需要 5 分钟。",
           "cancel": "取消",
           "take": "开始教程"
+        },
+        "exit_confirm": {
+          "title": "中止教程？",
+          "description": "下次您进入新手引导时，将重新播放引导步骤",
+          "cancel": "取消",
+          "exit": "中止"
         }
       }
     }
-  }
+  },
+  "oauth_redirect_title": "重定向",
+  "oauth_redirect_description": "正在重定向到<0>ILLA Cloud</0>"
 }

@@ -59,10 +59,10 @@ export const OracleDBConfigElement: FC<ConfigElementProps> = (props) => {
 
   const handleConnectionTest = useCallback(() => {
     const data = getValues()
-    const { resourceName, ...otherParams } = data
+    const { resourceName, host, ...otherParams } = data
     onActionConfigElementTest(
       data,
-      otherParams as OracleResource,
+      { ...otherParams, host: host.trim() } as OracleResource,
       "oracle",
       setTestLoading,
     )
@@ -134,10 +134,8 @@ export const OracleDBConfigElement: FC<ConfigElementProps> = (props) => {
           tips={
             formState.errors.host && !showAlert ? (
               <div css={errorMsgStyle}>
-                <>
-                  <WarningCircleIcon css={errorIconStyle} />
-                  {formState.errors.host.message}
-                </>
+                <WarningCircleIcon css={errorIconStyle} />
+                <>{formState.errors.host.message}</>
               </div>
             ) : null
           }
@@ -218,7 +216,6 @@ export const OracleDBConfigElement: FC<ConfigElementProps> = (props) => {
           forceEqualWidth={true}
           options={ConnectTypeOptions}
         />
-
         <ControlledElement
           title={t("editor.action.resource.db.label.username")}
           defaultValue={content.username}
@@ -265,7 +262,6 @@ export const OracleDBConfigElement: FC<ConfigElementProps> = (props) => {
         <div css={optionLabelStyle}>
           {t("editor.action.resource.db.title.advanced_option")}
         </div>
-
         <ControlledElement
           title={t("editor.action.form.label.oracle.ssl")}
           defaultValue={content.ssl}

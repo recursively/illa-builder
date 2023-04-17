@@ -16,6 +16,8 @@ export interface LayoutInfo {
   z: number
   unitW: number
   unitH: number
+  minW: number
+  minH: number
 }
 
 export interface StatusInfo {
@@ -30,6 +32,11 @@ export interface UpdateComponentNodeLayoutInfoPayload {
   options?: Partial<{
     parentNode: string
   }>
+}
+
+export interface updateComponentStatusInfoPayload {
+  displayName: string
+  statusInfo: Partial<StatusInfo>
 }
 
 export interface UpdateComponentSlicePropsPayload {

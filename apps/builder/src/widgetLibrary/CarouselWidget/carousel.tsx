@@ -1,3 +1,4 @@
+import { toPath } from "lodash"
 import { FC, forwardRef, useCallback, useEffect, useMemo, useRef } from "react"
 import { useSelector } from "react-redux"
 import Slider from "react-slick"
@@ -7,6 +8,7 @@ import { Image } from "@illa-design/react"
 import { ReactComponent as NextIcon } from "@/assets/carousel/next-shadow.svg"
 import { ReactComponent as PreviousIcon } from "@/assets/carousel/prev-shadow.svg"
 import { getIsILLAEditMode } from "@/redux/config/configSelector"
+import { convertPathToString } from "@/utils/executionTreeHelper/utils"
 import { buttonLayoutStyle } from "@/widgetLibrary/ButtonWidget/style"
 import {
   applyDisabledStyle,
@@ -17,6 +19,14 @@ import {
 import { formatData } from "@/widgetLibrary/CarouselWidget/utils"
 import { TooltipWrapper } from "@/widgetLibrary/PublicSector/TooltipWrapper"
 import { CarouselProps, CarouselWidgetProps } from "./interface"
+
+const PrevArrow = () => {
+  return <PreviousIcon />
+}
+
+const NextArrow = () => {
+  return <NextIcon />
+}
 
 export const Carousel = forwardRef<Slider, CarouselProps>((props, ref) => {
   const {
@@ -45,8 +55,8 @@ export const Carousel = forwardRef<Slider, CarouselProps>((props, ref) => {
       arrows={showArrows}
       autoplay={autoPlay}
       autoplaySpeed={interval}
-      prevArrow={<PreviousIcon />}
-      nextArrow={<NextIcon />}
+      prevArrow={<PrevArrow />}
+      nextArrow={<NextArrow />}
       lazyLoad={"anticipated"}
       afterChange={onChange}
     >
@@ -120,12 +130,13 @@ export const CarouselWidget: FC<CarouselWidgetProps> = (props) => {
   const handleOnClickItem = useCallback(
     (index: number) => {
       if (configureMode === "static") {
+        const paths = ["manualData", `${index}`, "events"]
         triggerEventHandler(
           "click",
-          `manualData.${index}.events`,
+          convertPathToString(paths),
           undefined,
           (path) => {
-            return path.split(".").slice(3).join(".")
+            return convertPathToString(toPath(path).slice(3))
           },
         )
       } else {

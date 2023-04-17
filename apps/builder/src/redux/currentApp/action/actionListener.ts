@@ -1,11 +1,12 @@
 import { AnyAction, Unsubscribe, isAnyOf } from "@reduxjs/toolkit"
 import { BuilderApi } from "@/api/base"
+import { getIsILLAGuideMode } from "@/redux/config/configSelector"
 import { configActions } from "@/redux/config/configSlice"
 import { actionActions } from "@/redux/currentApp/action/actionSlice"
 import { getAppId } from "@/redux/currentApp/appInfo/appInfoSelector"
 import { componentsActions } from "@/redux/currentApp/editor/components/componentsSlice"
 import {
-  getIndependenciesMap,
+  getInDependenciesMap,
   getRawTree,
 } from "@/redux/currentApp/executionTree/executionSelector"
 import { AppListenerEffectAPI, AppStartListening } from "@/store"
@@ -45,7 +46,7 @@ const handleUpdateDisplayNameEffect = (
 ) => {
   const { oldDisplayName, newDisplayName } = action.payload
   const rootState = listenerApi.getState()
-  const independenciesMap = getIndependenciesMap(rootState)
+  const independenciesMap = getInDependenciesMap(rootState)
   const seeds = getRawTree(rootState)
   const { updateActionSlice, updateWidgetSlice } = changeDisplayNameHelper(
     independenciesMap,
@@ -103,7 +104,8 @@ const handleUpdateAsyncEffect = (
       allChangedActions.push(currentAction)
     }
   }
-  if (allChangedActions.length) {
+  const isGuideMode = getIsILLAGuideMode(rootState)
+  if (allChangedActions.length && !isGuideMode) {
     // TODO: it's vary hack,need BE provide new API
     allChangedActions.forEach((action) => {
       BuilderApi.teamRequest({

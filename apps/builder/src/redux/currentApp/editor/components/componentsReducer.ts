@@ -6,6 +6,7 @@ import {
   UpdateComponentContainerPayload,
   UpdateComponentNodeLayoutInfoPayload,
   UpdateComponentSlicePropsPayload,
+  updateComponentStatusInfoPayload,
 } from "@/redux/currentApp/editor/components/componentsPayload"
 import { searchDsl } from "@/redux/currentApp/editor/components/componentsSelector"
 import {
@@ -17,6 +18,7 @@ import {
   ComponentsState,
   CopyComponentPayload,
   DeleteComponentNodePayload,
+  DeleteGlobalStatePayload,
   DeletePageNodePayload,
   DeleteSectionViewPayload,
   DeleteTargetPageSectionPayload,
@@ -24,6 +26,7 @@ import {
   RootComponentNode,
   RootComponentNodeProps,
   SectionViewShape,
+  SetGlobalStatePayload,
   SortComponentNodeChildrenPayload,
   UpdateComponentDisplayNamePayload,
   UpdateComponentNodeHeightPayload,
@@ -63,7 +66,6 @@ export const addComponentReducer: CaseReducer<
       if (parentNode != null) {
         if (dealNode.props) {
           dealNode.props = getNewWidgetPropsByUpdateSlice(
-            dealNode.displayName,
             dealNode.props ?? {},
             dealNode.props ?? {},
           )
@@ -122,7 +124,6 @@ export const copyComponentReducer: CaseReducer<
       if (parentNode != null) {
         if (newComponentNode.props) {
           newComponentNode.props = getNewWidgetPropsByUpdateSlice(
-            newComponentNode.displayName,
             newComponentNode.props ?? {},
             newComponentNode.props ?? {},
           )
@@ -180,14 +181,9 @@ export const deletePageNodeReducer: CaseReducer<
     return
   }
   const rootNode = state
-  const allDisplayNames = [displayName]
 
   const searchNode = searchDsl(rootNode, displayName)
   if (!searchNode) return
-  const searchNodeChildNodes = searchNode.childrenNode
-  searchNodeChildNodes?.forEach((node) => {
-    allDisplayNames.push(node.displayName)
-  })
   const parentNode = rootNode as RootComponentNode
   const childrenNodes = parentNode.childrenNode
   const currentIndex = childrenNodes.findIndex((value) => {
@@ -238,11 +234,7 @@ export const updateComponentPropsReducer: CaseReducer<
   if (!node) return
   const widgetProps = node.props || {}
   const clonedWidgetProps = cloneDeep(widgetProps)
-  node.props = getNewWidgetPropsByUpdateSlice(
-    displayName,
-    updateSlice,
-    clonedWidgetProps,
-  )
+  node.props = getNewWidgetPropsByUpdateSlice(updateSlice, clonedWidgetProps)
 }
 
 export const updateMultiComponentPropsReducer: CaseReducer<
@@ -257,11 +249,7 @@ export const updateMultiComponentPropsReducer: CaseReducer<
     if (!node) return
     const widgetProps = node.props || {}
     const clonedWidgetProps = cloneDeep(widgetProps)
-    node.props = getNewWidgetPropsByUpdateSlice(
-      displayName,
-      updateSlice,
-      clonedWidgetProps,
-    )
+    node.props = getNewWidgetPropsByUpdateSlice(updateSlice, clonedWidgetProps)
   })
 }
 
@@ -625,6 +613,30 @@ export const updateViewportSizeReducer: CaseReducer<
   state.props.viewportSizeType = action.payload.viewportSizeType
 }
 
+export const resetComponentsReducer: CaseReducer<
+  ComponentsState,
+  PayloadAction
+> = (state, action) => {
+  return ComponentsInitialState
+}
+
+const updateComponentLayoutInfoHelper = (
+  state: ComponentsState,
+  displayName: string,
+  layoutInfo: Partial<LayoutInfo>,
+) => {
+  let currentNode = searchDsl(state, displayName)
+  if (!currentNode || !layoutInfo || Object.keys(layoutInfo).length === 0)
+    return
+  ;(Object.keys(layoutInfo) as Partial<Array<keyof LayoutInfo>>).forEach(
+    (key) => {
+      ;(currentNode as ComponentNode)[key as keyof LayoutInfo] = layoutInfo[
+        key as keyof LayoutInfo
+      ] as number
+    },
+  )
+}
+
 export const updateComponentNodeHeightReducer: CaseReducer<
   ComponentsState,
   PayloadAction<UpdateComponentNodeHeightPayload>
@@ -636,30 +648,44 @@ export const updateComponentNodeHeightReducer: CaseReducer<
   currentNode.h = Math.max(height, currentNode.minH)
 }
 
-export const resetComponentsReducer: CaseReducer<
-  ComponentsState,
-  PayloadAction
-> = (state, action) => {
-  return ComponentsInitialState
-}
-
 export const updateComponentLayoutInfoReducer: CaseReducer<
   ComponentsState,
   PayloadAction<UpdateComponentNodeLayoutInfoPayload>
 > = (state, action) => {
   if (!state) return
-  const { displayName, layoutInfo, statusInfo } = action.payload
+  const { displayName, layoutInfo } = action.payload
+  updateComponentLayoutInfoHelper(state, displayName, layoutInfo)
+}
+
+export const batchUpdateComponentLayoutInfoWhenReflowReducer: CaseReducer<
+  ComponentsState,
+  PayloadAction<UpdateComponentNodeLayoutInfoPayload[]>
+> = (state, action) => {
+  if (!state) return
+  action.payload.forEach((updateSlice) => {
+    const { displayName, layoutInfo } = updateSlice
+    updateComponentLayoutInfoHelper(state, displayName, layoutInfo)
+  })
+}
+
+export const batchUpdateComponentLayoutInfoReducer: CaseReducer<
+  ComponentsState,
+  PayloadAction<UpdateComponentNodeLayoutInfoPayload[]>
+> = (state, action) => {
+  if (!state) return
+  action.payload.forEach((updateSlice) => {
+    const { displayName, layoutInfo } = updateSlice
+    updateComponentLayoutInfoHelper(state, displayName, layoutInfo)
+  })
+}
+
+const updateComponentStatusInfoHelper = (
+  state: ComponentsState,
+  displayName: string,
+  statusInfo: Partial<StatusInfo>,
+) => {
   let currentNode = searchDsl(state, displayName)
-  if (!currentNode || !layoutInfo || Object.keys(layoutInfo).length === 0)
-    return
-  ;(Object.keys(layoutInfo) as Partial<Array<keyof LayoutInfo>>).forEach(
-    (key) => {
-      ;(currentNode as ComponentNode)[key as keyof LayoutInfo] = layoutInfo[
-        key as keyof LayoutInfo
-      ] as number
-    },
-  )
-  if (statusInfo && Object.keys(statusInfo).length > 0) {
+  if (currentNode && statusInfo && Object.keys(statusInfo).length > 0) {
     ;(Object.keys(statusInfo) as Partial<Array<keyof StatusInfo>>).forEach(
       (key) => {
         ;(currentNode as ComponentNode)[key as keyof StatusInfo] = statusInfo[
@@ -670,31 +696,55 @@ export const updateComponentLayoutInfoReducer: CaseReducer<
   }
 }
 
-export const batchUpdateComponentLayoutInfoReducer: CaseReducer<
+export const updateComponentStatusInfoReducer: CaseReducer<
   ComponentsState,
-  PayloadAction<UpdateComponentNodeLayoutInfoPayload[]>
+  PayloadAction<updateComponentStatusInfoPayload>
+> = (state, action) => {
+  if (!state) return
+  const { displayName, statusInfo } = action.payload
+  updateComponentStatusInfoHelper(state, displayName, statusInfo)
+}
+
+export const batchUpdateComponentStatusInfoReducer: CaseReducer<
+  ComponentsState,
+  PayloadAction<updateComponentStatusInfoPayload[]>
 > = (state, action) => {
   if (!state) return
   action.payload.forEach((updateSlice) => {
-    const { displayName, layoutInfo, statusInfo } = updateSlice
-    let currentNode = searchDsl(state, displayName)
-    if (!currentNode || !layoutInfo || Object.keys(layoutInfo).length === 0)
-      return
-    ;(Object.keys(layoutInfo) as Partial<Array<keyof LayoutInfo>>).forEach(
-      (key) => {
-        ;(currentNode as ComponentNode)[key as keyof LayoutInfo] = layoutInfo[
-          key as keyof LayoutInfo
-        ] as number
-      },
-    )
-    if (statusInfo && Object.keys(statusInfo).length > 0) {
-      ;(Object.keys(statusInfo) as Partial<Array<keyof StatusInfo>>).forEach(
-        (key) => {
-          ;(currentNode as ComponentNode)[key as keyof StatusInfo] = statusInfo[
-            key as keyof StatusInfo
-          ] as boolean
-        },
-      )
-    }
+    const { displayName, statusInfo } = updateSlice
+    updateComponentStatusInfoHelper(state, displayName, statusInfo)
   })
+}
+
+export const setGlobalStateReducer: CaseReducer<
+  ComponentsState,
+  PayloadAction<SetGlobalStatePayload>
+> = (state, action) => {
+  if (!state) return
+  const { value, key, oldKey } = action.payload
+  const originGlobalData = state.props?.globalData || {}
+  if (oldKey && originGlobalData[oldKey]) {
+    delete originGlobalData[oldKey]
+  }
+  const newProps = {
+    ...state.props,
+    globalData: {
+      ...originGlobalData,
+      [key]: value,
+    },
+  }
+  state.props = getNewWidgetPropsByUpdateSlice(
+    newProps ?? {},
+    state.props ?? {},
+  )
+}
+
+export const deleteGlobalStateByKeyReducer: CaseReducer<
+  ComponentsState,
+  PayloadAction<DeleteGlobalStatePayload>
+> = (state, action) => {
+  if (!state || !state.props) return
+  const { key } = action.payload
+  const originGlobalData = state.props?.globalData || {}
+  if (Object.hasOwn(originGlobalData, key)) delete originGlobalData[key]
 }

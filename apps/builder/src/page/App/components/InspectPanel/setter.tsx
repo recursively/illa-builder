@@ -1,9 +1,11 @@
-import { get } from "lodash"
+import { get, toPath } from "lodash"
 import { memo, useContext, useMemo } from "react"
 import { useSelector } from "react-redux"
 import { SelectedPanelContext } from "@/page/App/components/InspectPanel/context/selectedContext"
 import { getSetterByType } from "@/page/App/components/PanelSetters"
 import { getComponentNodeBySingleSelected } from "@/redux/currentApp/editor/components/componentsSelector"
+import { getGuideStatus } from "@/redux/guide/guideSelector"
+import { convertPathToString } from "@/utils/executionTreeHelper/utils"
 import { PanelSetterProps } from "./interface"
 import { PanelLabel } from "./label"
 import { applySetterPublicWrapperStyle, applySetterWrapperStyle } from "./style"
@@ -23,8 +25,11 @@ export const Setter = memo<PanelSetterProps>((props: PanelSetterProps) => {
     expectedType,
     defaultValue,
     icon,
+    displayName,
+    canShowLabel = true,
   } = props
   const Comp = getSetterByType(setterType)
+  const isGuideMode = useSelector(getGuideStatus)
   const componentNode = useSelector(getComponentNodeBySingleSelected)
   const {
     widgetProps,
@@ -45,26 +50,27 @@ export const Setter = memo<PanelSetterProps>((props: PanelSetterProps) => {
         }
         return get(widgetProps, bindAttrNameItem)
       })
-
       return shown(...bindAttrNameValues)
     }
     return true
   }, [bindAttrName, shown, parentAttrName, widgetProps])
 
   const renderLabel = useMemo(() => {
-    return !useCustomLayout && labelName ? (
+    return canShowLabel && !useCustomLayout && labelName ? (
       <PanelLabel
         labelName={labelName}
         labelDesc={labelDesc}
         isInList={isInList}
       />
     ) : null
-  }, [useCustomLayout, labelName, labelDesc, isInList])
+  }, [canShowLabel, useCustomLayout, labelName, labelDesc, isInList])
 
   const _finalAttrName = useMemo(() => {
     if (typeof attrName === "string") {
       if (parentAttrName) {
-        return `${parentAttrName}.${attrName}`
+        const parentAttrNamePath = toPath(parentAttrName)
+
+        return convertPathToString([...parentAttrNamePath, attrName])
       }
       return attrName
     }
@@ -117,6 +123,7 @@ export const Setter = memo<PanelSetterProps>((props: PanelSetterProps) => {
           defaultValue={defaultValue}
           icon={icon}
           componentNode={componentNode}
+          isGuideMode={isGuideMode}
         />
       </div>
     ) : null
@@ -140,6 +147,7 @@ export const Setter = memo<PanelSetterProps>((props: PanelSetterProps) => {
     defaultValue,
     icon,
     componentNode,
+    isGuideMode,
   ])
 
   return canRenderSetter ? (

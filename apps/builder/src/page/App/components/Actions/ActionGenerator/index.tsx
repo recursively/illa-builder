@@ -1,11 +1,13 @@
 import { FC, useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useDispatch, useSelector } from "react-redux"
+import { v4 } from "uuid"
 import { Modal, useMessage } from "@illa-design/react"
 import { BuilderApi } from "@/api/base"
 import { ActionResourceCreator } from "@/page/App/components/Actions/ActionGenerator/ActionResourceCreator"
 import { ActionResourceSelector } from "@/page/App/components/Actions/ActionGenerator/ActionResourceSelector"
 import { modalContentStyle } from "@/page/Dashboard/components/ResourceGenerator/style"
+import { getIsILLAGuideMode } from "@/redux/config/configSelector"
 import { configActions } from "@/redux/config/configSlice"
 import { actionActions } from "@/redux/currentApp/action/actionSlice"
 import {
@@ -39,6 +41,7 @@ export const ActionGenerator: FC<ActionGeneratorProps> = function (props) {
   const appInfo = useSelector(getAppInfo)
 
   const allResource = useSelector(getAllResources)
+  const isGuideMode = useSelector(getIsILLAGuideMode)
 
   let title
   switch (currentStep) {
@@ -90,12 +93,22 @@ export const ActionGenerator: FC<ActionGeneratorProps> = function (props) {
       const displayName =
         DisplayNameGenerator.generateDisplayName(currentActionType)
       const initialContent = getInitialContent(currentActionType)
-      const data: Partial<ActionItem<ActionContent>> = {
+      const data: Omit<ActionItem<ActionContent>, "actionId"> = {
         actionType: currentActionType,
         displayName,
         resourceId,
         content: initialContent,
         ...actionItemInitial,
+      }
+      if (isGuideMode) {
+        const createActionData: ActionItem<ActionContent> = {
+          ...data,
+          actionId: v4(),
+        }
+        dispatch(actionActions.addActionItemReducer(createActionData))
+        dispatch(configActions.changeSelectedAction(createActionData))
+        successCallback?.()
+        return
       }
       BuilderApi.teamRequest(
         {
@@ -125,7 +138,7 @@ export const ActionGenerator: FC<ActionGeneratorProps> = function (props) {
         },
       )
     },
-    [appInfo.appId, currentActionType, dispatch, message, t],
+    [appInfo.appId, currentActionType, dispatch, message, t, isGuideMode],
   )
 
   const handleBack = useCallback((page: ActionCreatorPage) => {

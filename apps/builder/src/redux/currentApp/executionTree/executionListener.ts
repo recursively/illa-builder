@@ -5,6 +5,7 @@ import { getReflowResult } from "@/page/App/components/DotPanel/calc"
 import { actionActions } from "@/redux/currentApp/action/actionSlice"
 import { LayoutInfo } from "@/redux/currentApp/editor/components/componentsPayload"
 import {
+  getAllComponentDisplayNameMapLayoutInfo,
   getCanvas,
   searchDsl,
 } from "@/redux/currentApp/editor/components/componentsSelector"
@@ -12,8 +13,8 @@ import { componentsActions } from "@/redux/currentApp/editor/components/componen
 import { ComponentNode } from "@/redux/currentApp/editor/components/componentsState"
 import {
   getExecutionResult,
+  getExecutionWidgetLayoutInfo,
   getRawTree,
-  getWidgetExecutionResult,
 } from "@/redux/currentApp/executionTree/executionSelector"
 import { executionActions } from "@/redux/currentApp/executionTree/executionSlice"
 import { AppListenerEffectAPI, AppStartListening } from "@/store"
@@ -136,33 +137,13 @@ async function handleStartExecutionOnCanvas(
   }
 }
 
-async function handleUpdateWidgetPosition(
-  action: AnyAction,
-  listenerApi: AppListenerEffectAPI,
-) {
-  const rootState = listenerApi.getState()
-  const rawTree = getRawTree(rootState)
-  if (!rawTree) return
-  mergeActionResult(rawTree)
-  const oldExecutionTree = getExecutionResult(rootState)
-  if (executionTree) {
-    const executionResult = executionTree.updateWidgetLayoutInfo(rawTree)
-    const updates = diff(oldExecutionTree, executionResult.evaluatedTree) || []
-    listenerApi.dispatch(
-      executionActions.setExecutionResultReducer({
-        updates,
-      }),
-    )
-  }
-}
-
 async function handleUpdateReflowEffect(
   action: ReturnType<typeof executionActions.updateWidgetLayoutInfoReducer>,
   listenerApi: AppListenerEffectAPI,
 ) {
   const rootState = listenerApi.getState()
   const rootNode = getCanvas(rootState)
-  const executionResult = getWidgetExecutionResult(rootState)
+  const executionResult = getExecutionWidgetLayoutInfo(rootState)
   let updateComponents: ComponentNode[] = [
     {
       displayName: action.payload.displayName,
@@ -173,14 +154,14 @@ async function handleUpdateReflowEffect(
       h: action.payload.layoutInfo.h,
     } as ComponentNode,
   ].map((node) => {
-    const layoutInfo = executionResult[node.displayName].$layoutInfo
+    const layoutInfo = executionResult[node.displayName].layoutInfo
     return mergeLayoutInfoToComponent(layoutInfo, node)
   })
 
   const effectResultMap = new Map<string, ComponentNode>()
   const updateSlice: Array<{
     displayName: string
-    layoutInfo: Omit<LayoutInfo, "z" | "unitW" | "unitH">
+    layoutInfo: Omit<LayoutInfo, "z" | "unitW" | "unitH" | "minW" | "minH">
   }> = []
 
   updateComponents.forEach((componentNode) => {
@@ -299,6 +280,18 @@ function handleUpdateExecutedTree(
   }
 }
 
+function handleUpdateWidgetPositionInExecutionLayoutInfo(
+  action: AnyAction,
+  listenerApi: AppListenerEffectAPI,
+) {
+  const rootState = listenerApi.getState()
+  const displayNameMapNode = getAllComponentDisplayNameMapLayoutInfo(rootState)
+  if (!displayNameMapNode) return
+  listenerApi.dispatch(
+    executionActions.setWidgetLayoutInfoReducer(displayNameMapNode),
+  )
+}
+
 export function setupExecutionListeners(
   startListening: AppStartListening,
 ): Unsubscribe {
@@ -323,6 +316,8 @@ export function setupExecutionListeners(
         componentsActions.deleteSectionViewReducer,
         componentsActions.updateSectionViewPropsReducer,
         componentsActions.addModalComponentReducer,
+        componentsActions.setGlobalStateReducer,
+        componentsActions.deleteGlobalStateByKeyReducer,
         actionActions.addActionItemReducer,
         actionActions.removeActionItemReducer,
         actionActions.updateActionItemReducer,
@@ -336,15 +331,12 @@ export function setupExecutionListeners(
         executionActions.updateExecutionByDisplayNameReducer,
         executionActions.updateExecutionByMultiDisplayNameReducer,
         executionActions.updateModalDisplayReducer,
+        executionActions.setGlobalStateInExecutionReducer,
+        executionActions.setInGlobalStateInExecutionReducer,
+        executionActions.setLocalStorageInExecutionReducer,
+        executionActions.clearLocalStorageInExecutionReducer,
       ),
       effect: handleStartExecutionOnCanvas,
-    }),
-    startListening({
-      matcher: isAnyOf(
-        componentsActions.updateComponentLayoutInfoReducer,
-        componentsActions.batchUpdateComponentLayoutInfoReducer,
-      ),
-      effect: handleUpdateWidgetPosition,
     }),
     startListening({
       actionCreator: componentsActions.addModalComponentReducer,
@@ -355,8 +347,23 @@ export function setupExecutionListeners(
       effect: handleUpdateReflowEffect,
     }),
     startListening({
-      actionCreator: executionActions.batchUpdateWidgetLayoutInfoReducer,
-      effect: handleUpdateExecutedTree,
+      matcher: isAnyOf(
+        componentsActions.addComponentReducer,
+        componentsActions.copyComponentReducer,
+        componentsActions.deleteComponentNodeReducer,
+        componentsActions.addTargetPageSectionReducer,
+        componentsActions.deleteTargetPageSectionReducer,
+        componentsActions.addPageNodeWithSortOrderReducer,
+        componentsActions.deletePageNodeReducer,
+        componentsActions.deleteSectionViewReducer,
+        componentsActions.addModalComponentReducer,
+        componentsActions.updateComponentLayoutInfoReducer,
+        componentsActions.batchUpdateComponentLayoutInfoWhenReflowReducer,
+        componentsActions.updateComponentContainerReducer,
+        componentsActions.batchUpdateComponentLayoutInfoReducer,
+        executionActions.startExecutionReducer,
+      ),
+      effect: handleUpdateWidgetPositionInExecutionLayoutInfo,
     }),
   ]
 

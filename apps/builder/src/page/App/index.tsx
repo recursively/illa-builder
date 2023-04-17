@@ -127,7 +127,7 @@ export const Editor: FC = () => {
   const isOnline = useSelector(getIsOnline)
 
   // init app
-  const loadingState = useInitBuilderApp("edit")
+  const { loadingState } = useInitBuilderApp("edit")
 
   const handleMouseDownOnModal = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
@@ -151,21 +151,23 @@ export const Editor: FC = () => {
     [controls],
   )
 
-  const combinLoadingState =
+  const combineLoadingState =
     loadingState ||
     wsStatus === ILLA_WEBSOCKET_STATUS.INIT ||
     wsStatus === ILLA_WEBSOCKET_STATUS.CONNECTING
 
   return (
     <div css={editorContainerStyle}>
-      {combinLoadingState && <AppLoading />}
-      {!combinLoadingState && (
+      {combineLoadingState && <AppLoading />}
+      {!combineLoadingState && (
         <Shortcut>
           <TriggerProvider renderInBody zIndex={10}>
             <PageNavBar css={navbarStyle} />
           </TriggerProvider>
           <div css={contentStyle}>
-            {showLeftPanel && <DataWorkspace css={leftPanelStyle} />}
+            <TriggerProvider renderInBody zIndex={10}>
+              {showLeftPanel && <DataWorkspace css={leftPanelStyle} />}
+            </TriggerProvider>
             <div css={middlePanelStyle}>
               <TriggerProvider renderInBody zIndex={10}>
                 <CanvasPanel css={centerPanelStyle} />

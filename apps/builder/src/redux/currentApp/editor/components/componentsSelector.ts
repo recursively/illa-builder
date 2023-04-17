@@ -2,6 +2,7 @@ import { createSelector } from "@reduxjs/toolkit"
 import { get, set } from "lodash"
 import { getSelectedComponents } from "@/redux/config/configSelector"
 import { ComponentNode } from "@/redux/currentApp/editor/components/componentsState"
+import { widgetLayoutInfo } from "@/redux/currentApp/executionTree/executionState"
 import store, { RootState } from "@/store"
 import {
   BASIC_BLOCK_COLUMNS,
@@ -67,7 +68,7 @@ export function searchDsl(
   return null
 }
 
-export function flattenDslToMap(rootNode: ComponentNode): {
+export function flattenDslToMapExcludeContainerNode(rootNode: ComponentNode): {
   [key: string]: ComponentNode
 } {
   const queue = [rootNode]
@@ -134,6 +135,10 @@ export const getCanvas = (state: RootState) => {
   return state.currentApp.editor.components
 }
 
+export const getAppComponents = (state: RootState) => {
+  return state.currentApp.editor.components?.childrenNode
+}
+
 export const getComponentNodeBySingleSelected = createSelector(
   [getCanvas, getSelectedComponents],
   (rootDsl, selectedComponentDisplayNames) => {
@@ -150,7 +155,7 @@ export const getDisplayNameMapComponent = createSelector(
     if (rootDSL == null) {
       return {}
     }
-    return flattenDslToMap(rootDSL)
+    return flattenDslToMapExcludeContainerNode(rootDSL)
   },
 )
 
@@ -160,7 +165,7 @@ export const getAllComponentDisplayNameMapProps = createSelector(
     if (rootDSL == null) {
       return null
     }
-    const components = flattenDslToMap(rootDSL)
+    const components = flattenDslToMapExcludeContainerNode(rootDSL)
     if (!components) return
     const res: Record<string, any> = {}
     Object.keys(components).forEach((key) => {
@@ -174,7 +179,31 @@ export const getAllComponentDisplayNameMapProps = createSelector(
         $type: "WIDGET",
         $widgetType: components[key].type,
         $childrenNode: childrenNode,
-        $layoutInfo: {
+      }
+    })
+    return res
+  },
+)
+
+export const getAllComponentDisplayNameMapLayoutInfo = createSelector(
+  [getCanvas],
+  (rootDSL) => {
+    if (rootDSL == null) {
+      return null
+    }
+    const components = flattenDslToMapExcludeContainerNode(rootDSL)
+    if (!components) return
+    const res: Record<string, widgetLayoutInfo> = {}
+    Object.keys(components).forEach((key) => {
+      const childrenNode = Array.isArray(components[key].childrenNode)
+        ? components[key].childrenNode.map((node) => node.displayName)
+        : []
+      res[key] = {
+        displayName: components[key].displayName,
+        parentNode: components[key].parentNode as string,
+        widgetType: components[key].type,
+        childrenNode: childrenNode,
+        layoutInfo: {
           x: components[key].x,
           y: components[key].y,
           z: components[key].z,
@@ -182,6 +211,8 @@ export const getAllComponentDisplayNameMapProps = createSelector(
           h: components[key].h,
           unitW: components[key].unitW,
           unitH: components[key].unitH,
+          minW: components[key].minW,
+          minH: components[key].minH,
         },
       }
     })
@@ -193,7 +224,7 @@ export const getAllContainerWidget = createSelector([getCanvas], (rootDSL) => {
   if (rootDSL == null) {
     return null
   }
-  const components = flattenDslToMap(rootDSL)
+  const components = flattenDslToMapExcludeContainerNode(rootDSL)
   if (!components) return
   const res: Record<string, any> = {}
   Object.keys(components).forEach((key) => {
@@ -465,3 +496,111 @@ export const getCurrentPageSectionColumns = createSelector(
     }
   },
 )
+
+function getNodeDepths(tree: ComponentNode) {
+  const nodeDepths: Record<string, number> = {}
+  function traverse(node: ComponentNode, depth: number) {
+    nodeDepths[node.displayName] = depth
+    if (node.childrenNode) {
+      for (let i = 0; i < node.childrenNode.length; i++) {
+        traverse(node.childrenNode[i], depth + 1)
+      }
+    }
+  }
+  traverse(tree, 0)
+  return nodeDepths
+}
+
+export const getComponentDisplayNameMapDepth = createSelector(
+  [getCanvas],
+  (rootNode) => {
+    if (!rootNode) return {}
+    return getNodeDepths(rootNode)
+  },
+)
+
+export type RelationMap = Record<
+  string,
+  { parentNode: string; childrenNode: string[]; containerType: string }
+>
+const generateRelationMap = (rootNode: ComponentNode) => {
+  const queue = [rootNode]
+  let relationMap: RelationMap = {}
+  while (queue.length > 0) {
+    const head = queue[queue.length - 1]
+    relationMap = {
+      ...relationMap,
+      [head.displayName]: {
+        parentNode: head.parentNode || "",
+        childrenNode:
+          head.childrenNode?.map((child) => child.displayName) ?? [],
+        containerType: head.containerType,
+      },
+    }
+
+    queue.pop()
+    if (head.childrenNode) {
+      head.childrenNode.forEach((child) => {
+        if (child) {
+          queue.push(child)
+        }
+      })
+    }
+  }
+  return relationMap
+}
+
+const findPrevTargetNode = (
+  displayName: string,
+  relationMap: RelationMap,
+): string => {
+  let parentNode = relationMap[displayName]
+
+  if (parentNode.containerType === "EDITOR_SCALE_SQUARE") {
+    return displayName
+  } else {
+    if (parentNode.parentNode === "") return displayName
+    return findPrevTargetNode(parentNode.parentNode, relationMap)
+  }
+}
+
+export const getShowWidgetNameParentMap = createSelector(
+  [getCanvas],
+  (rootNode) => {
+    if (!rootNode) return {}
+    const relationMap = generateRelationMap(rootNode)
+    const editorScaleSquareNodeRelationMap: RelationMap = {}
+    Object.keys(relationMap).forEach((key) => {
+      const { containerType } = relationMap[key]
+      if (containerType === "EDITOR_SCALE_SQUARE") {
+        editorScaleSquareNodeRelationMap[key] = relationMap[key]
+      }
+    })
+    Object.keys(editorScaleSquareNodeRelationMap).forEach((key) => {
+      const { parentNode } = editorScaleSquareNodeRelationMap[key]
+      if (parentNode) {
+        editorScaleSquareNodeRelationMap[key] = {
+          ...editorScaleSquareNodeRelationMap[key],
+          parentNode: findPrevTargetNode(parentNode, relationMap),
+          childrenNode: [],
+        }
+      }
+    })
+    Object.keys(editorScaleSquareNodeRelationMap).forEach((key) => {
+      const currentNode = editorScaleSquareNodeRelationMap[key]
+      if (
+        currentNode.parentNode &&
+        editorScaleSquareNodeRelationMap[currentNode.parentNode]
+      ) {
+        editorScaleSquareNodeRelationMap[
+          currentNode.parentNode
+        ].childrenNode.push(key)
+      }
+    })
+    return editorScaleSquareNodeRelationMap
+  },
+)
+
+export const getOriginalGlobalData = createSelector([getCanvas], (rootNode) => {
+  return (rootNode?.props?.globalData ?? {}) as Record<string, string>
+})

@@ -1,10 +1,10 @@
 import { PayloadAction } from "@reduxjs/toolkit"
 import {
   Connection,
-  getPayload,
+  getTextMessagePayload,
   transformComponentReduxPayloadToWsPayload,
 } from "@/api/ws"
-import { Signal, Target } from "@/api/ws/interface"
+import { Signal, Target } from "@/api/ws/ILLA_PROTO"
 import {
   UpdateComponentContainerPayload,
   UpdateComponentNodeLayoutInfoPayload,
@@ -47,10 +47,10 @@ export const componentsAsync = (
   const { payload } = action
   switch (reduxAction) {
     case "addComponentReducer":
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -67,10 +67,10 @@ export const componentsAsync = (
         payload.modalComponentNode.parentNode,
       )
       if (!parentNode) return
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_OR_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_OR_UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -79,10 +79,10 @@ export const componentsAsync = (
         ),
       )
       const allChildrenNodes = parentNode.childrenNode
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_OR_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_OR_UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -96,10 +96,10 @@ export const componentsAsync = (
       const copyComponentPayload = (payload as CopyComponentPayload[]).map(
         (copyShape) => copyShape.newComponentNode,
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -117,10 +117,10 @@ export const componentsAsync = (
         })
       const updateComponentReflowWSPayload =
         transformComponentReduxPayloadToWsPayload(allEffectComponentNodes)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -136,10 +136,10 @@ export const componentsAsync = (
         transformComponentReduxPayloadToWsPayload(
           sortComponentNodeChildrenPayload.newChildrenNode,
         )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_MOVE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.MOVE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -148,24 +148,34 @@ export const componentsAsync = (
         ),
       )
       break
-    case "updateComponentContainerReducer":
+    case "updateComponentContainerReducer": {
       const updateComponentContainerPayload: UpdateComponentContainerPayload =
         payload
-      const componentNodes = updateComponentContainerPayload.updateSlice.map(
-        (slice) => slice.component,
+
+      const allDisplayNames = updateComponentContainerPayload.updateSlice.map(
+        (slice) => slice.component.displayName,
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_MOVE_STATE,
-          Target.TARGET_COMPONENTS,
+      const allNodes = allDisplayNames
+        .map((displayName) => {
+          return searchDsl(
+            getCanvas(nextRootState),
+            displayName,
+          ) as ComponentNode
+        })
+        .filter((node) => node !== null) as ComponentNode[]
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.MOVE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
           uid,
-          componentNodes,
+          allNodes,
         ),
       )
       break
+    }
     case "updateComponentPropsReducer":
       const updatePayload: UpdateComponentPropsPayload = payload
       const finalNode = searchDsl(
@@ -173,10 +183,10 @@ export const componentsAsync = (
         updatePayload.displayName,
       )
       if (finalNode != null) {
-        Connection.getRoom("app", currentAppID)?.send(
-          getPayload(
-            Signal.SIGNAL_UPDATE_STATE,
-            Target.TARGET_COMPONENTS,
+        Connection.getTextRoom("app", currentAppID)?.send(
+          getTextMessagePayload(
+            Signal.UPDATE_STATE,
+            Target.COMPONENTS,
             true,
             action,
             teamID,
@@ -208,10 +218,10 @@ export const componentsAsync = (
         .filter((node) => node !== null) as ComponentNode[]
       const wsPayload = transformComponentReduxPayloadToWsPayload(allNodes)
 
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -230,10 +240,10 @@ export const componentsAsync = (
         .filter((node) => node !== null) as ComponentNode[]
       if (Array.isArray(finalNodes)) {
         const wsPayload = transformComponentReduxPayloadToWsPayload(finalNodes)
-        Connection.getRoom("app", currentAppID)?.send(
-          getPayload(
-            Signal.SIGNAL_UPDATE_STATE,
-            Target.TARGET_COMPONENTS,
+        Connection.getTextRoom("app", currentAppID)?.send(
+          getTextMessagePayload(
+            Signal.UPDATE_STATE,
+            Target.COMPONENTS,
             true,
             action,
             teamID,
@@ -245,10 +255,10 @@ export const componentsAsync = (
       break
     case "deleteComponentNodeReducer":
       const deletePayload: DeleteComponentNodePayload = payload
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_DELETE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.DELETE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -261,10 +271,10 @@ export const componentsAsync = (
       const resetWsPayload = transformComponentReduxPayloadToWsPayload(
         payload as ComponentNode,
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -285,10 +295,10 @@ export const componentsAsync = (
         parentNode,
         ...(findOldNode.childrenNode || []),
       ])
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -313,10 +323,10 @@ export const componentsAsync = (
       const canvasNode = getCanvas(nextRootState)
       const pageNode = searchDsl(canvasNode, pageName)
       if (!pageNode) break
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_DELETE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.DELETE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -324,10 +334,10 @@ export const componentsAsync = (
           [pageName],
         ),
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -349,10 +359,10 @@ export const componentsAsync = (
         (node) => node.showName === deleteSectionName,
       )
       if (!targetPageChildrenNode) return
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_DELETE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.DELETE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -361,10 +371,10 @@ export const componentsAsync = (
         ),
       )
 
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -386,10 +396,10 @@ export const componentsAsync = (
 
       const WSPagePayload = transformComponentReduxPayloadToWsPayload(pageNode)
 
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -397,10 +407,10 @@ export const componentsAsync = (
           WSPagePayload,
         ),
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -417,10 +427,10 @@ export const componentsAsync = (
       if (!pageNode) break
       const WSPagePayload = transformComponentReduxPayloadToWsPayload(pageNode)
 
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -435,10 +445,10 @@ export const componentsAsync = (
       const rootNode = getCanvas(nextRootState)
       if (!rootNode) break
       const WSPagePayload = transformComponentReduxPayloadToWsPayload(rootNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -454,10 +464,10 @@ export const componentsAsync = (
       if (!rootNode || !Array.isArray(nodes) || nodes.length === 0) break
       const rootNodeUpdateWSPayload =
         transformComponentReduxPayloadToWsPayload(rootNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -465,10 +475,10 @@ export const componentsAsync = (
           rootNodeUpdateWSPayload,
         ),
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -484,10 +494,10 @@ export const componentsAsync = (
       if (!rootNode) break
       const rootNodeUpdateWSPayload =
         transformComponentReduxPayloadToWsPayload(rootNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -495,10 +505,10 @@ export const componentsAsync = (
           rootNodeUpdateWSPayload,
         ),
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_DELETE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.DELETE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -517,10 +527,10 @@ export const componentsAsync = (
       if (!targetNode) break
       const updateWSPayload =
         transformComponentReduxPayloadToWsPayload(targetNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -528,10 +538,10 @@ export const componentsAsync = (
           updateWSPayload,
         ),
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_CREATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.CREATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -550,10 +560,10 @@ export const componentsAsync = (
       if (!targetNode) break
       const updateWSPayload =
         transformComponentReduxPayloadToWsPayload(targetNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_DELETE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.DELETE_STATE,
+          Target.COMPONENTS,
           true,
           null,
           teamID,
@@ -561,10 +571,10 @@ export const componentsAsync = (
           [viewDisplayName],
         ),
       )
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -582,10 +592,10 @@ export const componentsAsync = (
       if (!targetNode) break
       const updateWSPayload =
         transformComponentReduxPayloadToWsPayload(targetNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -603,10 +613,10 @@ export const componentsAsync = (
       if (!targetNode) break
       const updateWSPayload =
         transformComponentReduxPayloadToWsPayload(targetNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -628,10 +638,10 @@ export const componentsAsync = (
       if (targetNodes.length < 1) break
       const updateWSPayload =
         transformComponentReduxPayloadToWsPayload(targetNodes)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,
@@ -639,7 +649,59 @@ export const componentsAsync = (
           updateWSPayload,
         ),
       )
+      break
     }
+    case "batchUpdateComponentLayoutInfoWhenReflowReducer": {
+      const displayNames = (
+        payload as UpdateComponentNodeLayoutInfoPayload[]
+      ).map((item) => item.displayName)
+      const rootNode = getCanvas(nextRootState)
+      if (!rootNode) break
+      const targetNodes = displayNames
+        .map((displayName) => searchDsl(rootNode, displayName))
+        .filter((node) => node !== null) as ComponentNode[]
+      if (targetNodes.length < 1) break
+      const updateWSPayload =
+        transformComponentReduxPayloadToWsPayload(targetNodes)
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
+          false,
+          null,
+          teamID,
+          uid,
+          updateWSPayload,
+        ),
+      )
+      break
+    }
+    case "batchUpdateComponentStatusInfoReducer": {
+      const displayNames = (
+        payload as UpdateComponentNodeLayoutInfoPayload[]
+      ).map((item) => item.displayName)
+      const rootNode = getCanvas(nextRootState)
+      if (!rootNode) break
+      const targetNodes = displayNames
+        .map((displayName) => searchDsl(rootNode, displayName))
+        .filter((node) => node !== null) as ComponentNode[]
+      if (targetNodes.length < 1) break
+      const updateWSPayload =
+        transformComponentReduxPayloadToWsPayload(targetNodes)
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
+          true,
+          action,
+          teamID,
+          uid,
+          updateWSPayload,
+        ),
+      )
+      break
+    }
+    case "updateComponentStatusInfoReducer":
     case "updateComponentLayoutInfoReducer": {
       const displayName = (payload as UpdateComponentNodeLayoutInfoPayload)
         .displayName
@@ -649,10 +711,28 @@ export const componentsAsync = (
       if (!targetNode) break
       const updateWSPayload =
         transformComponentReduxPayloadToWsPayload(targetNode)
-      Connection.getRoom("app", currentAppID)?.send(
-        getPayload(
-          Signal.SIGNAL_UPDATE_STATE,
-          Target.TARGET_COMPONENTS,
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
+          true,
+          action,
+          teamID,
+          uid,
+          updateWSPayload,
+        ),
+      )
+      break
+    }
+    case "setGlobalStateReducer": {
+      const rootNode = getCanvas(nextRootState)
+      if (!rootNode) break
+      const updateWSPayload =
+        transformComponentReduxPayloadToWsPayload(rootNode)
+      Connection.getTextRoom("app", currentAppID)?.send(
+        getTextMessagePayload(
+          Signal.UPDATE_STATE,
+          Target.COMPONENTS,
           true,
           action,
           teamID,

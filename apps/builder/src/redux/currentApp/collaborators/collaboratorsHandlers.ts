@@ -1,8 +1,10 @@
-import { Connection, getPayload } from "@/api/ws"
-import { Signal, Target } from "@/api/ws/interface"
+import { Connection, getTextMessagePayload } from "@/api/ws"
+import { Signal, Target } from "@/api/ws/ILLA_PROTO"
+import { configActions } from "@/redux/config/configSlice"
 import { CollaboratorsInfo } from "@/redux/currentApp/collaborators/collaboratorsState"
+import { componentsActions } from "@/redux/currentApp/editor/components/componentsSlice"
 import { getCurrentTeamInfo } from "@/redux/team/teamSelector"
-import store from "@/store"
+import store, { AppListenerEffectAPI } from "@/store"
 
 export const getDisattachedComponents = (
   currentAttached: Record<string, CollaboratorsInfo[]>,
@@ -18,10 +20,10 @@ export const updateSelectedComponentUsersHandler = (payload: string[]) => {
   const currentAppID = store.getState().currentApp.appInfo.appId ?? ""
   const { id: teamID = "", uid = "" } =
     getCurrentTeamInfo(store.getState()) ?? {}
-  Connection.getRoom("app", currentAppID)?.send(
-    getPayload(
-      Signal.SIGNAL_COOPERATE_ATTACH,
-      Target.TARGET_COMPONENTS,
+  Connection.getTextRoom("app", currentAppID)?.send(
+    getTextMessagePayload(
+      Signal.COOPERATE_ATTACH,
+      Target.COMPONENTS,
       true,
       {
         type: "attachComponent",
@@ -38,10 +40,10 @@ export const clearComponentAttachedUsersHandler = (payload: string[]) => {
   const currentAppID = store.getState().currentApp.appInfo.appId ?? ""
   const { id: teamID = "", uid = "" } =
     getCurrentTeamInfo(store.getState()) ?? {}
-  Connection.getRoom("app", currentAppID)?.send(
-    getPayload(
-      Signal.SIGNAL_COOPERATE_DISATTACH,
-      Target.TARGET_COMPONENTS,
+  Connection.getTextRoom("app", currentAppID)?.send(
+    getTextMessagePayload(
+      Signal.COOPERATE_DISATTACH,
+      Target.COMPONENTS,
       true,
       {
         type: "attachComponent",
@@ -66,6 +68,32 @@ export const updateCurrentAllComponentsAttachedUsers = (
   if (!!disattachedComponents.length) {
     clearComponentAttachedUsersHandler(disattachedComponents)
   }
+}
+
+export const handleUpdateSelectedComponentExecution = (
+  action: ReturnType<typeof configActions.updateSelectedComponent>,
+  listenerApi: AppListenerEffectAPI,
+) => {
+  const currentComponentsAttachedUsers =
+    listenerApi.getState().currentApp.collaborators.components
+  updateCurrentAllComponentsAttachedUsers(
+    action.payload,
+    currentComponentsAttachedUsers,
+  )
+}
+
+export const handleClearSelectedComponentExecution = (
+  action: ReturnType<typeof componentsActions.deleteComponentNodeReducer>,
+  listenerApi: AppListenerEffectAPI,
+) => {
+  let currentSelected = listenerApi.getState().config.selectedComponents
+  if (Array.isArray(currentSelected) && currentSelected.length > 0) {
+    currentSelected = currentSelected.filter(
+      (item) => !action.payload.displayNames.includes(item),
+    )
+  }
+  listenerApi.dispatch(configActions.updateSelectedComponent(currentSelected))
+  clearComponentAttachedUsersHandler(action.payload.displayNames)
 }
 
 export const AVATAR_WIDTH = 14

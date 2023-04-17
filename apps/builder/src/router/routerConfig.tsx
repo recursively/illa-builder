@@ -11,26 +11,30 @@ import { Page403 } from "@/page/status/403"
 import { Page404 } from "@/page/status/404"
 import { Page500 } from "@/page/status/500"
 import { RoutesObjectPro } from "@/router/interface"
+import { getUserInfo } from "@/router/loader"
+import { getAuthToken } from "@/utils/auth"
 import { setLocalStorage } from "@/utils/storage"
 import { isCloudVersion } from "@/utils/typeHelper"
-import { removeUrlParams } from "@/utils/url"
 
 export const cloudUrl = `${location.protocol}//${
   import.meta.env.VITE_CLOUD_URL
 }`
 
+export const cloudRedirect = `${cloudUrl}?redirectUrl=${encodeURIComponent(
+  location.origin + location.pathname,
+)}`
+
 const handleRemoveUrlToken = async (args: LoaderFunctionArgs) => {
   const { request } = args
   const url = new URL(request.url)
   const token = url?.searchParams?.get("token")
+  const authToken = token ?? getAuthToken()
+  if (authToken) {
+    await getUserInfo(authToken)
+  }
   if (!token) return null
   setLocalStorage("token", token, -1)
-  const current = removeUrlParams(window.location.href, ["token"])
-  window.history.replaceState(
-    {},
-    "",
-    `${window.location.pathname}${current.search}`,
-  )
+  window.history.replaceState({}, "", window.location.pathname)
   return null
 }
 
@@ -73,6 +77,12 @@ export const commonRouter: RoutesObjectPro[] = [
   {
     path: "/:teamIdentifier/template/:templateName",
     element: layLoad(lazy(() => import("@/page/Template"))),
+    errorElement: <Page404 />,
+    needLogin: true,
+  },
+  {
+    path: "/:teamIdentifier/guide",
+    element: layLoad(lazy(() => import("@/page/Template/GuideApp"))),
     errorElement: <Page404 />,
     needLogin: true,
   },

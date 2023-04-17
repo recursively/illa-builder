@@ -1,5 +1,6 @@
 import { CaseReducer, PayloadAction } from "@reduxjs/toolkit"
 import { applyChange } from "deep-diff"
+import { has, set } from "lodash"
 import {
   DependenciesState,
   ErrorShape,
@@ -9,7 +10,8 @@ import {
   executionInitialState,
   setExecutionResultPayload,
 } from "@/redux/currentApp/executionTree/executionState"
-import { isWidget } from "@/utils/executionTreeHelper/utils"
+import { CUSTOM_STORAGE_PREFIX } from "@/utils/storage"
+import { isObject } from "@/utils/typeHelper"
 
 export const setDependenciesReducer: CaseReducer<
   ExecutionState,
@@ -130,24 +132,26 @@ export const resetExecutionResultReducer: CaseReducer<
   return executionInitialState
 }
 
+export const setWidgetLayoutInfoReducer: CaseReducer<
+  ExecutionState,
+  PayloadAction<ExecutionState["widgetsLayoutInfo"]>
+> = (state, action) => {
+  state.widgetsLayoutInfo = action.payload
+}
+
 export const updateWidgetLayoutInfoReducer: CaseReducer<
   ExecutionState,
   PayloadAction<UpdateWidgetLayoutInfoPayload>
 > = (state, action) => {
   if (!state) return
   const { displayName, layoutInfo } = action.payload
-  const result = state.result
-  const currentWidget = result[displayName]
-  if (
-    !currentWidget ||
-    !layoutInfo ||
-    Object.keys(layoutInfo).length === 0 ||
-    !isWidget(currentWidget)
-  ) {
+  const widgetsLayoutInfo = state.widgetsLayoutInfo
+  const currentWidget = widgetsLayoutInfo[displayName]
+  if (!currentWidget || !layoutInfo || Object.keys(layoutInfo).length === 0) {
     return
   }
-  currentWidget.$layoutInfo = {
-    ...currentWidget.$layoutInfo,
+  currentWidget.layoutInfo = {
+    ...currentWidget.layoutInfo,
     ...layoutInfo,
   }
 }
@@ -159,19 +163,95 @@ export const batchUpdateWidgetLayoutInfoReducer: CaseReducer<
   if (!state) return
   action.payload.forEach((updateSlice) => {
     const { displayName, layoutInfo } = updateSlice
-    const result = state.result
-    const currentWidget = result[displayName]
-    if (
-      !currentWidget ||
-      !layoutInfo ||
-      Object.keys(layoutInfo).length === 0 ||
-      !isWidget(currentWidget)
-    ) {
+    const widgetsLayoutInfo = state.widgetsLayoutInfo
+    const currentWidget = widgetsLayoutInfo[displayName]
+    if (!currentWidget || !layoutInfo || Object.keys(layoutInfo).length === 0) {
       return
     }
-    currentWidget.$layoutInfo = {
-      ...currentWidget.$layoutInfo,
+    currentWidget.layoutInfo = {
+      ...currentWidget.layoutInfo,
       ...layoutInfo,
     }
   })
+}
+
+export const updateWidgetLayoutInfoWhenChangeDisplayNameReducer: CaseReducer<
+  ExecutionState,
+  PayloadAction<{ oldDisplayName: string; newDisplayName: string }>
+> = (state, action) => {
+  const { oldDisplayName, newDisplayName } = action.payload
+  const widgetsLayoutInfo = state.widgetsLayoutInfo
+  const currentWidget = widgetsLayoutInfo[oldDisplayName]
+  if (!currentWidget) return
+  delete widgetsLayoutInfo[oldDisplayName]
+  widgetsLayoutInfo[newDisplayName] = currentWidget
+}
+
+export const setGlobalStateInExecutionReducer: CaseReducer<
+  ExecutionState,
+  PayloadAction<{
+    key: string
+    value: unknown
+  }>
+> = (state, action) => {
+  const result = state.result
+  if (!result) return
+  const globalState = result.globalData
+  const rootNode = result.root
+  const rootGlobalState = rootNode.globalData
+  if (!globalState || !rootGlobalState) return
+  globalState[action.payload.key] = action.payload.value
+  rootGlobalState[action.payload.key] = action.payload.value
+}
+
+export const setInGlobalStateInExecutionReducer: CaseReducer<
+  ExecutionState,
+  PayloadAction<{
+    key: string
+    path: string
+    value: unknown
+  }>
+> = (state, action) => {
+  const result = state.result
+  if (!result) return
+  const globalState = result.globalData
+  const rootNode = result.root
+  const rootGlobalState = rootNode.globalData
+  if (!isObject(globalState) || !isObject(rootGlobalState)) return
+  const targetState = globalState[action.payload.key]
+  const targetRootState = rootGlobalState[action.payload.key]
+  if (
+    (isObject(targetState) || Array.isArray(targetState)) &&
+    has(targetState, action.payload.path)
+  ) {
+    set(targetState, action.payload.path, action.payload.value)
+    set(targetRootState, action.payload.path, action.payload.value)
+  }
+}
+
+export const clearLocalStorageInExecutionReducer: CaseReducer<
+  ExecutionState,
+  PayloadAction
+> = (state, action) => {
+  state.result.localStorage = {}
+}
+
+export const setLocalStorageInExecutionReducer: CaseReducer<
+  ExecutionState,
+  PayloadAction<{
+    key: string
+    value: unknown
+  }>
+> = (state, action) => {
+  const { key, value } = action.payload
+  const localStorage = state.result.localStorage ?? {}
+  const newLocalStorage = {
+    ...localStorage,
+    [key]: value,
+  }
+  state.result.localStorage = newLocalStorage
+  window.localStorage.setItem(
+    CUSTOM_STORAGE_PREFIX,
+    JSON.stringify(newLocalStorage),
+  )
 }

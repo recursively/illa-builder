@@ -1,10 +1,10 @@
 import { AxiosError, AxiosResponse } from "axios"
 import { cloneDeep, get, merge } from "lodash"
 import { createMessage, isNumber, isString } from "@illa-design/react"
-import { Api, ApiError, BuilderApi } from "@/api/base"
-import { downloadActionResult } from "@/page/App/components/Actions/ActionPanel/utils/clientS3"
-import { runActionTransformer } from "@/page/App/components/Actions/ActionPanel/utils/runActionTransformerHelper"
+import { ActionApi, Api, ApiError } from "@/api/base"
+import { GUIDE_DEFAULT_ACTION_ID } from "@/config/guide"
 import { BUILDER_CALC_CONTEXT } from "@/page/App/context/globalDataProvider"
+import { getIsILLAGuideMode } from "@/redux/config/configSelector"
 import {
   ActionContent,
   ActionItem,
@@ -19,6 +19,7 @@ import {
   FirestoreActionTypeValue,
   ServiceTypeValue,
 } from "@/redux/currentApp/action/firebaseAction"
+import { GoogleSheetDataTypeTransform } from "@/redux/currentApp/action/googleSheetsAction"
 import {
   BooleanTypes,
   BooleanValueMap,
@@ -46,6 +47,7 @@ import {
   wrapFunctionCode,
 } from "@/utils/evaluateDynamicString/utils"
 import { runEventHandler } from "@/utils/eventHandlerHelper"
+import { downloadSingleFile } from "@/utils/file"
 import { isObject } from "@/utils/typeHelper"
 
 export const actionDisplayNameMapFetchResult: Record<string, any> = {}
@@ -209,7 +211,7 @@ const fetchS3ClientResult = async (
         })
         const contentType =
           downloadResponse.headers["content-type"].split(";")[0] ?? ""
-        downloadActionResult(
+        downloadSingleFile(
           contentType,
           downloadCommandArgs.objectKey,
           downloadResponse.data || "",
@@ -410,7 +412,7 @@ const fetchActionResult = (
   }
 
   if (isPublic) {
-    BuilderApi.teamIdentifierRequest(
+    ActionApi.teamIdentifierRequest(
       {
         method: "POST",
         url: `/apps/${appId}/publicActions/${actionId}/run`,
@@ -426,7 +428,7 @@ const fetchActionResult = (
       crash,
     )
   } else {
-    BuilderApi.teamRequest(
+    ActionApi.teamRequest(
       {
         method: "POST",
         url: `/apps/${appId}/actions/${actionId}/run`,
@@ -624,7 +626,26 @@ const transformDataFormat = (
           ...(showData && { data: isObject(data) ? data : {} }),
         },
       }
-      return contents
+    case "googlesheets": {
+      const { opts: googleOpts } = contents
+      const googleSheetsTransformKeys = Object.keys(
+        GoogleSheetDataTypeTransform,
+      )
+      const newGoogleSheetOpts = { ...googleOpts }
+      googleSheetsTransformKeys.forEach((key) => {
+        const value =
+          GoogleSheetDataTypeTransform[
+            key as keyof typeof GoogleSheetDataTypeTransform
+          ]
+        if (newGoogleSheetOpts[key] === "") {
+          newGoogleSheetOpts[key] = value
+        }
+      })
+      return {
+        ...contents,
+        opts: newGoogleSheetOpts,
+      }
+    }
     default:
       return contents
   }
@@ -647,10 +668,7 @@ export const runAction = (
   const rootState = store.getState()
   const appId = getAppId(rootState)
   const executionResult = getExecutionResult(rootState)
-  if (actionType === "transformer") {
-    runActionTransformer(action as ActionItem<TransformerAction>)
-    return
-  }
+  const isGuideMode = getIsILLAGuideMode(rootState)
   const { successEvent, failedEvent, ...restContent } = content
   const realContent: Record<string, any> = isTrigger
     ? restContent
@@ -668,14 +686,15 @@ export const runAction = (
       },
     }),
   )
+  const currentActionId = isGuideMode ? GUIDE_DEFAULT_ACTION_ID : actionId
 
   fetchActionResult(
-    action.config.public,
+    action.config?.public || false,
     resourceId || "",
     actionType,
     displayName,
     appId,
-    actionId,
+    currentActionId,
     actionContent,
     successEvent,
     failedEvent,

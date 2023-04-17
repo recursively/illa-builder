@@ -143,6 +143,9 @@
           },
           "oracle": {
             "oracle": "Oracle DB"
+          },
+          "gs": {
+            "google_sheets": "Google Sheets"
           }
         },
         "validate": {
@@ -175,6 +178,26 @@
           "restapi": {
             "certificates": "Certificates",
             "verification_mode": "Verification mode"
+          },
+          "gs": {
+            "private_key": "Private key",
+            "action_type": "Action type",
+            "spreadsheet": "Spreadsheet",
+            "sheet_name": "Sheet name",
+            "data_range": "Data range",
+            "limit": "Limit",
+            "offset": "Offset",
+            "a1_notation": "A1 notation",
+            "values_to_append": "Values to append",
+            "filter_by": "Filter by",
+            "update_value": "Update value",
+            "primary_key_column": "Primary key column",
+            "array_of_rows_to_upd": "Array of rows to update",
+            "filters_to_match_row": "Row index",
+            "consider_queries_tha": "Consider queries that delete no rows as successes",
+            "title_of_spreadsheet": "Title of spreadsheet",
+            "sheet_id_to_copy": "Sheet ID to copy",
+            "sheet_to_copy_to": "Sheet to copy to"
           }
         },
         "placeholder": {
@@ -200,12 +223,26 @@
           "oracle": {
             "username": "oracle",
             "password": "••••••••"
+          },
+          "gs": {
+            "private_key": "{\r\n  \"type\": \"service_account\",\r\n  \"project_id\": \"projectId\",\r\n  \"private_key_id\": \"privateKeyId\",\r\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\r\nprivateKey\r\n-----END PRIVATE KEY-----\",\r\n  \"client_email\": \"clientEmail\",\r\n  \"client_id\": \"100000000000000000000\",\r\n  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\r\n  \"token_uri\": \"https://oauth2.googleapis.com/token\",\r\n  \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\r\n  \"client_x509_cert_url\": \"clientx509CertUrl\"\r\n}",
+            "row_filter": {
+              "column_name": "column_name",
+              "value": "value"
+            },
+            "update_value": "{{ [ {\r\n\"column1\":\"newValue1\",\r\n\"column2\":\"newValue2\"\r\n} ] }}",
+            "primary_key_column": "column_name",
+            "array_of_rows_to_upd": "{{ [ { \"column1\":\"newValue1\", \"column2\":\"newValue2\" } ] }}",
+            "filters_to_match_row": {
+              "key": "key",
+              "value": "value"
+            }
           }
         },
         "tips": {
           "acl": "The provided content is a PUBLIC configuration. Leave blank for PRIVATE. Don't forget to configure CORS on your bucket. <0>See Cross-Origin Resource Sharing (CORS).</0>",
           "connect_to_local": {
-            "cloud": "It looks like you're trying to connect to a database that's local to your machine or part of a private network. It might not work in the ILLA Cloud version. Check out our <0>docs<0> for how to the self-host version.",
+            "cloud": "It looks like you're trying to connect to a database that's local to your machine or part of a private network. It might not work in the ILLA Cloud version. Check out our <0>docs</0> for how to the self-host version.",
             "selfhost": "It looks like you're trying to connect to a database that's local to your machine. Please use the local area network IP address of the machine instead of \"localhost\" or \"127.0.0.1\".",
             "title": {
               "tips": "Tips"
@@ -215,6 +252,18 @@
             "verification_mode": {
               "skip_ca_certificate": "Your server may be vulnerable to attacks."
             }
+          },
+          "gs": {
+            "private_key": "Used to connect to Google Sheets. Click <0>here</0> to create a project and get the OAuth credential. With service account authentication, we will only have access to spreadsheets you share with the email address corresponding to the service account used. See <1>here</1> for documentation on creating a service account and access key.\n\nUsers might experience limits from different processing components not controlled by Sheets. Learn more about the <2>quota limits</2>",
+            "leave_blank_to_selec": "Leave blank to select the first sheet",
+            "to_select_the_first_": "To select the first five cells in the first column of a sheet titled sheet1, A1 notation is sheet1!A1:A5. <0>See Google's docs for more information. </0>",
+            "values_to_append": "{{ [ {\r\n\"column1\":\"newValue1\",\r\n\"column2\":\"newValue2\"\r\n} ] }}",
+            "a1_notation": "To select the first five cells in the first column of a sheet titled sheet1, A1 notation is sheet1!A1:A5. <0>See Google's docs for more information. </0>",
+            "sheet_id_to_copy": "Find this by looking at the ?gid=123123 in the URL of your Google sheets",
+            "copy_to_sheet_name": "Required. Rename the copied sheet."
+          },
+          "tidb": {
+            "ca_certificate": "We fill in the CA Certificate used for TLS Connections to Serverless Tier by default. If you need TLS Connections to Dedicated Tier, <0>Click here</0> to view the configuration method."
           }
         },
         "option": {
@@ -268,11 +317,37 @@
               "verify_ca_certificat": "Verify CA Certificate",
               "skip_ca_certificate_": "Skip CA Certificate verification"
             }
+          },
+          "gs": {
+            "action_type": {
+              "read_data_from_a_spr": "Read data from a spreadsheet",
+              "append_data_to_a_spr": "Append data to a spreadsheet",
+              "update_a_spreadsheet": "Update a spreadsheet",
+              "bulk_update_a_spread": "Bulk update a spreadsheet by primary key",
+              "delete_a_single_row_": "Delete a single row from a spreadsheet",
+              "create_a_spreadsheet": "Create a spreadsheet",
+              "copy_a_single_sheet_": "Copy a single sheet to another spreadsheet",
+              "list_available_sprea": "List available spreadsheets",
+              "get_spreadsheet_info": "Get spreadsheet info"
+            },
+            "data_range": {
+              "use_a1_notation": "Use A1 notation",
+              "use_limit_and_offset": "Use limit and offset"
+            },
+            "filter_by": {
+              "use_a1_notation": "Use A1 notation",
+              "use_row_filters": "Use row filters"
+            }
           }
         },
         "default": {
           "appwrite": {
             "limit": " {{ 1000 }}"
+          }
+        },
+        "group": {
+          "gs": {
+            "service_account": "Service Account"
           }
         }
       },
@@ -284,7 +359,8 @@
           "run": "Run",
           "save": "Save",
           "save_and_run": "Save & Run",
-          "save_fail": "Failed to save"
+          "save_fail": "Failed to save",
+          "test_run": "Test run"
         },
         "elastic": {
           "action_type": "Action Type",
@@ -360,8 +436,8 @@
               "dig": "delegated-by",
               "us-east-1": "us-east-1",
               "authenticate_using_t": "Authenticate using the HTTP Authorization header instead of query parameters",
-              "find_instructions_on": "Find instructions on where to find access keys <0>in the AWS docs<0>.",
-              "role_to_assume": "Use a <0>different role<0> when accessing the API"
+              "find_instructions_on": "Find instructions on where to find access keys <0>in the AWS docs</0>.",
+              "role_to_assume": "Use a <0>different role</0> when accessing the API"
             }
           },
           "option": {
@@ -549,7 +625,7 @@
             "mode_id": "bert-base-uncased",
             "text": "The answer to the universe is [MASK].",
             "json": "{ \r\n\"past_user_inputs\": [\"Which movie is the best ?\"], \r\n\"generated_responses\": [\"It's Die Hard for sure.\"], \r\n\"text\": \"Can you explain why ?\" \r\n}",
-            "binary": "'@cats.jpg' \\",
+            "binary": "i.e. {{ upload1.file[0] }}. A binary files without file prefix",
             "use_cache": "Boolean, leave blank for true",
             "min_length": "Integer to define the minimum length in tokens of the output summary",
             "top_k": "Integer to define the top tokens",
@@ -918,7 +994,20 @@
       "actions_title": "ACTIONS & TRANSFORMERS ",
       "components_title": "COMPONENTS ",
       "globals_title": "GLOBALS ",
-      "pages_title": "PAGES"
+      "pages_title": "PAGES",
+      "global_data_modal": {
+        "title": "Edit global data",
+        "variable_name": {
+          "tooltips": "Name of the variable. Use the initial value in this app via {{name}}",
+          "label": "Name",
+          "message": "Please enter the variable name"
+        },
+        "initial_value": {
+          "label": "Initial value",
+          "tooltips": "Supports objects or primitive values. Example: { count: 0 }",
+          "placeholder": "{{ { count: 0 } }}"
+        }
+      }
     },
     "deploy": {
       "fail": "Failed to deploy"
@@ -1009,7 +1098,9 @@
           "pause": "Pause",
           "ended": "Ended",
           "loaded": "Loaded",
-          "rowSelect": "Row select"
+          "rowSelect": "Row select",
+          "markerSelected": "markerSelected",
+          "markerCreated": "markerCreated"
         },
         "image_list": {
           "title": "Images",
@@ -1054,6 +1145,13 @@
         "size_type": {
           "kb": "KB",
           "mb": "MB"
+        },
+        "time_picker": {
+          "select_time": "Select time"
+        },
+        "time_range": {
+          "start_placeholder": "Start time",
+          "end_placeholder": "End time"
         }
       },
       "setter_group": {
@@ -1200,7 +1298,9 @@
         "scale_type": "Scale Type",
         "set_router": "Set router",
         "set_temporary_state": "Set temporary state",
-        "shadow": "Shadow",
+        "shadow": {
+          "shadow": "Shadow"
+        },
         "show_character_count": "Show character count",
         "show_clear_button": "Show clear button",
         "show_footer": "Show footer",
@@ -1257,12 +1357,12 @@
         "max_size": "Max size",
         "min_size": "Min size",
         "text_overflow": "Overflow",
-        "file_url": "File URL",
+        "file_url": "PDF Source",
         "show_tool_bar": "Show tool bar",
         "scale": "Scale page to",
         "scroll": "Snap scroll to each page",
         "min_max_size": "Min size ～ Max size",
-        "video_url": "Video URL",
+        "video_url": "Video source",
         "autoplay": "Autoplay",
         "loop": "Loop",
         "volume": "Volume",
@@ -1298,6 +1398,46 @@
           "file_data": "File data",
           "file_name": "File name with extension",
           "file_type": "File type"
+        },
+        "action_name": "Action name",
+        "variable": {
+          "path_of_value": "Path of value",
+          "variable": "Global data"
+        },
+        "code": {
+          "write_code": "Write code"
+        },
+        "slider": {
+          "step_size": "Step size",
+          "minimum": "Minimum",
+          "maximum": "Maximum",
+          "hide_output": "Hide output",
+          "prefix_icon": "Prefix icon",
+          "suffix_icon": "Suffix icon",
+          "allow_wrapping": "Allow wrapping"
+        },
+        "range_slider": {
+          "start_value": "Start value",
+          "end_value": "End value"
+        },
+        "name": "Name",
+        "audio": {
+          "audio_url": "Audio source"
+        },
+        "map": {
+          "markers": "Markers",
+          "initial_location": "Initial location",
+          "default_markers": "Default markers",
+          "latitude_field_name": "Latitude field name",
+          "longitude_field_name": "Longitude field name",
+          "zoom": "Zoom",
+          "enable_add_markers": "Enable add markers",
+          "enable_search_locati": "Enable search location",
+          "enable_clustering": "Enable clustering"
+        },
+        "time_range": {
+          "start_time": "Start time",
+          "end_time": "End time"
         }
       },
       "setter_tooltip": {
@@ -1338,7 +1478,7 @@
         "file_url": "Supports PDF URLs on the web, or base64 encoded data of pdf files. For example: \n{{ data:application/pdf;base64, example-data }}",
         "scale": "Scale each page to fill the width or height of the component.",
         "scroll": "Automatically locate to the beginning of each page when scrolling.",
-        "video_url": "Supports most video services or a direct link to any common video file type.",
+        "video_url": "Supports most video services or a direct link to any common video file type or the base64 encoded data of video files. For example: {{ data:audio/mp4;base64,exampleDate}}",
         "collapse": {
           "type": "Collapsible list: list, all items will automatically copy the style of the first item. You can specify the component data in each item via {{ currentItem.columnName }}. Collapsible panel: each panel is independent, you can specify the component style and data of each item separately.",
           "items": "Number of items",
@@ -1363,6 +1503,60 @@
         },
         "file_download": {
           "file_data": "Support base64 data, raw data, mapped data of table. "
+        },
+        "variable": {
+          "available_in_objects": "Available in objects and arrays. The path of the attribute in the object: {{objectName.attributeName}}. The index of the value in an array: {{1}}. An array in the object: {{objectName.attributeName.1}}",
+          "the_target_value": "The target value"
+        },
+        "slider": {
+          "default_value": "The initial value of the slider. You can dynamically change the initial value by typing JavaScript in {{}}.",
+          "minimum": "The minimum value of the slider",
+          "maximum": "The maximum value of the slider",
+          "step_size": "The minimum change unit of the slide",
+          "label": "The name of the field displayed to the user",
+          "caption": "A caption used to describe the field in detail",
+          "hide_label": "Set whether to display the label",
+          "allow_wrapping": "Set whether to allow label wrapping",
+          "position": "Set the position of the label relative to the component",
+          "alignment": "Set the alignment of the label",
+          "width": "When the label is on the left side of the component, set the width ratio of the label",
+          "prefix_icon": "The icon displayed in front of the component",
+          "suffix_icon": "The icon displayed after the component",
+          "hide_output": "Set whether to hide the value when sliding"
+        },
+        "step": {
+          "default_step": "Default step",
+          "show_step_number": "Show step numbers",
+          "indicate_completed_steps": "Indicate completed steps"
+        },
+        "range_slider": {
+          "start_value": "To set the minimum value of the range",
+          "end_value": "To set the maximum value of the range"
+        },
+        "audio": {
+          "audio_url": "Supports direct links to any common audio file type or the links to some audio services or the base64 encoded data of audio files. For example: {{ data:audio/mp3;base64,exampleDate}}"
+        },
+        "map": {
+          "markers": "To set markers on the map. The markers should be an array of objects with the same properties as the Default markers.",
+          "initial_location": "When initializing the map, the default centered display position",
+          "default_markers": "The default markers displayed when initializing the map. You can set it dynamically with the JavaScript in {{}}. ",
+          "latitude_field_name": "The latitude is taken from which property of the Initial location and Default markers objects.",
+          "longitude_field_name": "The longitude is taken from which property of the Initial location and Default markers objects.",
+          "zoom": "To set the map zoom",
+          "enable_add_markers": "Whether to allow users to add markers by clicking on the map",
+          "enable_search_locati": "Whether to allow users to search for location",
+          "enable_clustering": "Whether to allow multiple markers to aggregate when the map is zoomed out"
+        },
+        "time_picker": {
+          "format": "A valid time format string. For more information of the format: [dayJS](https://day.js.org/docs/en/parse/string-format)",
+          "the_span_of_the_valu": "The span of the value in minutes",
+          "show_a_clear_button_": "Show a clear button when the mouse is over the component. "
+        },
+        "time_range": {
+          "start_time": "The initial start time of the component. ",
+          "end_time": "The initial end time of the component. ",
+          "start_placeholder": "The value will be shown when the start time field is empty.",
+          "end_placeholder": "The value will be shown when the end time field is empty."
         }
       },
       "setter_option": {
@@ -1387,6 +1581,12 @@
           "csv": "CSV",
           "tsv": "TSV",
           "excel": "Excel(.xlsx)"
+        },
+        "shadow": {
+          "none": "None",
+          "large": "Large",
+          "medium": "Medium",
+          "small": "Small"
         }
       },
       "setter_placeholder": {
@@ -1406,7 +1606,10 @@
         "alt_text_mapped": "{{ item.alt_text }} ",
         "file_download": {
           "file_data": "{{ mysql1.data }}",
-          "file_name": "{{ new_data.csv }}"
+          "file_name": "new_data.csv"
+        },
+        "variable": {
+          "abc": "{{abc.a}}"
         }
       },
       "setter_tootip": {
@@ -1414,7 +1617,21 @@
       },
       "setter_message": {
         "choose_at_least": "Please choose at lease {{ min }} options.",
-        "choose_up_to": "Please choose up to {{max}} options."
+        "choose_up_to": "Please choose up to {{max}} options.",
+        "map": {
+          "zoom": "Please set a value between 1 and 22"
+        },
+        "upload": {
+          "size_exceed": "Files over 500MB may fail to parse.",
+          "single_file": "Only a single file is allowed.",
+          "file": "Unsupported file types are removed",
+          "directory": "Only directories are allowed."
+        }
+      },
+      "setter_description": {
+        "code": {
+          "write_code": "Write your code here. Use JavaScript inside of {{ }}"
+        }
       }
     },
     "page": {
@@ -1486,7 +1703,7 @@
     },
     "method": {
       "set_hidden": "Set hidden",
-      "set_file_url": "Set file URL",
+      "set_file_url": "Set PDF source",
       "play": "Play",
       "pause": "Pause",
       "seek_to": {
@@ -1494,7 +1711,7 @@
         "unit": "(s)"
       },
       "set_video_url": {
-        "video": "Video URL"
+        "video": "Video source"
       },
       "speed": {
         "speed": "Speed",
@@ -1533,6 +1750,20 @@
           "fail": "Request failed",
           "download_failed": "Failed to download"
         }
+      },
+      "setGlobalData": "Set global data",
+      "setLocalStorage": "Set local storage",
+      "audio": {
+        "set_audio_url": "Set audio source"
+      },
+      "map": {
+        "marker_selected": "Marker selected",
+        "marker_created": "Marker created",
+        "markers_changed": "Markers changed"
+      },
+      "time_range": {
+        "setstarttime": "setStartTime",
+        "setendtime": "setEndTime"
       }
     },
     "tutorial": {
@@ -1575,15 +1806,15 @@
           "drag_input": "Step 1: Drag an input here",
           "drag_button": "Step 2: Drag a button here",
           "drag_table": "Step 3:  Drag a table here",
-          "exit": "Exit",
+          "exit": "Cancel",
           "do_it": "Do it for me",
           "drag_title": "Drag components to the frame",
           "modify_action_title": "Modify the action",
-          "modify_action_description_modify": "Modify action to get data. We can use {{input1.value}} to get the data entered into the input component.",
+          "modify_action_description_modify": "Modify action to get data. We can use {{input1.value}} to get the data entered into the input component. \n\nselect * \nfrom users\njoin orders\non users.id = orders.id\nwhere {{!input1.value}} or lower(users.name) like '%{{input1.value.toLowerCase()}}%'",
           "modify_action_description_click": "Click Save and then click Run",
           "display_data_title": "Display data on table",
           "display_data_description_select": "Select the table on the frame",
-          "display_data_description_modify": "Modify the data source on the right panel. We can use {{postgre1.data}} to get the data.",
+          "display_data_description_modify": "Modify the data source on the right panel. We can use {{postgresql1.data}} to get the data.",
           "event_handler_title": "Click button to trigger action",
           "event_handler_description_1": "Select the button on the frame",
           "event_handler_description_2": "Add an event handler",
@@ -1594,10 +1825,14 @@
           "test_it_description": "Input a user name you want to search for and click the button",
           "test_it_button": "Next",
           "congratulations_title": "Congratulations 🎉",
-          "congratulations_description": "You just built your first app. If you have any questions during use, you can contact us via <0>Discord<0>. ",
-          "congratulations_button": "Done"
+          "congratulations_description": "You just built your first app. If you have any questions during use, you can contact us via <0>Discord</0>. ",
+          "congratulations_button": "Done",
+          "event_handler_description_all": "1. Add an event handler\r\n2. Click the event handler\r\n3. Change the action to trigger action\r\n4. Change the Query to postgresql1"
         }
       }
+    },
+    "global": {
+      "size_exceed": "Data size exceeds limit (current size: {{current_size}} bytes, limit: {{limit_size}} bytes)"
     }
   },
   "exit_preview": "Exit Preview",
@@ -1945,6 +2180,31 @@
     },
     "carousel": {
       "name": "Carousel"
+    },
+    "step": {
+      "name": "Steps"
+    },
+    "slider": {
+      "name": "Slider"
+    },
+    "range_slider": {
+      "name": "Range slider"
+    },
+    "audio": {
+      "name": "Audio",
+      "no_audio": "No audio"
+    },
+    "collaborative": {
+      "no_name": "No name"
+    },
+    "map": {
+      "name": "Map"
+    },
+    "time_picker": {
+      "name": "Time picker"
+    },
+    "time_range": {
+      "name": "Time range"
     }
   },
   "page": {
@@ -2309,8 +2569,16 @@
           "description": "Follow ILLA's tutorial to learn how to build an app. This will take about 5 minutes.",
           "cancel": "Cancel",
           "take": "Take a tutorial"
+        },
+        "exit_confirm": {
+          "title": "Stop the tutorial?",
+          "description": "The next time you enter the onboarding app, the guided steps will be replayed ",
+          "cancel": "Cancel",
+          "exit": "Stop it"
         }
       }
     }
-  }
+  },
+  "oauth_redirect_title": "Redirect",
+  "oauth_redirect_description": "Redirecting to <0>ILLA Cloud</0>"
 }

@@ -19,32 +19,36 @@ import {
   getDragResult,
   isAddAction,
 } from "@/page/App/components/DotPanel/calc"
+import { UNIT_HEIGHT } from "@/page/App/components/DotPanel/constant/canvas"
+import { DragPreview } from "@/page/App/components/DotPanel/dragPreview"
 import { FreezePlaceholder } from "@/page/App/components/DotPanel/freezePlaceholder"
+import { useMousePositionAsync } from "@/page/App/components/DotPanel/hooks/useMousePostionAsync"
 import {
   DragInfo,
   DropCollectedInfo,
   DropResultInfo,
 } from "@/page/App/components/DotPanel/interface"
+import { MultiSelectCanvas } from "@/page/App/components/DotPanel/multiSelectCanvas"
 import { PreviewColumnsChange } from "@/page/App/components/DotPanel/previewColumnsChange"
-import { PreviewPlaceholder } from "@/page/App/components/DotPanel/previewPlaceholder"
 import {
   applyComponentCanvasStyle,
   borderLineStyle,
+  selectoSelectionStyle,
 } from "@/page/App/components/DotPanel/style"
 import {
+  getLargeItemSharpe,
   getScaleItem,
+  getScaleResult,
   moveCallback,
 } from "@/page/App/components/DotPanel/utils"
 import { ScaleSquare } from "@/page/App/components/ScaleSquare"
+import { MultiSelectedScaleSquare } from "@/page/App/components/ScaleSquare/multiSelectedScaleSquare"
 import {
   getFreezeState,
   getIsILLAEditMode,
-  getIsILLAProductMode,
-  getSelectedComponents,
   isShowDot,
 } from "@/redux/config/configSelector"
 import { configActions } from "@/redux/config/configSlice"
-import { clearComponentAttachedUsersHandler } from "@/redux/currentApp/collaborators/collaboratorsHandlers"
 import {
   modifyComponentNodeX,
   modifyComponentNodeY,
@@ -54,8 +58,8 @@ import { componentsActions } from "@/redux/currentApp/editor/components/componen
 import { ComponentNode } from "@/redux/currentApp/editor/components/componentsState"
 import {
   IGNORE_WIDGET_TYPES,
+  getExecutionWidgetLayoutInfo,
   getRootNodeExecutionResult,
-  getWidgetExecutionResult,
 } from "@/redux/currentApp/executionTree/executionSelector"
 import { executionActions } from "@/redux/currentApp/executionTree/executionSlice"
 import { batchMergeLayoutInfoToComponent } from "@/utils/drag/drag"
@@ -64,8 +68,13 @@ import { BASIC_BLOCK_COLUMNS } from "@/utils/generators/generatePageOrSectionCon
 import { BasicContainer } from "@/widgetLibrary/BasicContainer/BasicContainer"
 import { ContainerEmptyState } from "@/widgetLibrary/ContainerWidget/emptyState"
 import { widgetBuilder } from "@/widgetLibrary/widgetBuilder"
-
-export const UNIT_HEIGHT = 8
+import { DragShadowPreview } from "../DragShadowPreview"
+import { fixedPosition } from "../DragShadowPreview/Shadow/utils"
+import { MousePreview } from "../MousePreview"
+import {
+  sendMousePositionHandler,
+  sendShadowMessageHandler,
+} from "./utils/sendBinaryMessage"
 
 function buildDisplayNameMapComponentNode(
   componentNode: ComponentNode,
@@ -99,6 +108,30 @@ function applyEffectMapToComponentNode(
     )
   }
   return newComponentNode
+}
+
+function getChildrenNodeUpdateSlice(
+  componentNode: ComponentNode,
+  childrenUpdateSlice: UpdateComponentNodeLayoutInfoPayload[],
+) {
+  const childrenNode = componentNode.childrenNode
+  if (Array.isArray(childrenNode) && childrenNode.length > 0) {
+    childrenNode.forEach((childNode) => {
+      childrenUpdateSlice.push({
+        displayName: childNode.displayName,
+        layoutInfo: {
+          x: childNode.x,
+          y: childNode.y,
+          w: childNode.w,
+          h: childNode.h,
+        },
+        options: {
+          parentNode: childNode.parentNode!,
+        },
+      })
+      getChildrenNodeUpdateSlice(childNode, childrenUpdateSlice)
+    })
+  }
 }
 
 function modifyChildrenNodeXWhenDrop(
@@ -172,27 +205,25 @@ export const RenderComponentCanvas: FC<{
 
   const isShowCanvasDot = useSelector(isShowDot)
   const isEditMode = useSelector(getIsILLAEditMode)
-  const isProductionMode = useSelector(getIsILLAProductMode)
   const isFreezeCanvas = useSelector(getFreezeState)
   const dispatch = useDispatch()
 
   const rootNodeProps = useSelector(getRootNodeExecutionResult)
-  const widgetExecutionResult = useSelector(getWidgetExecutionResult)
-  const selectedComponents = useSelector(getSelectedComponents)
+  const widgetExecutionLayoutInfo = useSelector(getExecutionWidgetLayoutInfo)
   const { currentPageIndex, pageSortedKey } = rootNodeProps
   const currentPageDisplayName = pageSortedKey[currentPageIndex]
+  const currentDragStartScrollTop = useRef(0)
 
-  const [xy, setXY] = useState([0, 0])
-  const [lunchXY, setLunchXY] = useState([0, 0])
-  const [canDrop, setCanDrop] = useState(true)
   const [rowNumber, setRowNumber] = useState(0)
   const [collisionEffect, setCollisionEffect] = useState(
     new Map<string, ComponentNode>(),
   )
   const dragDropManager = useDragDropManager()
+  const dragInfo = dragDropManager.getMonitor().getItem() as DragInfo
 
   const [ShowColumnsChange, setShowColumnsChange] = useState(false)
   const canShowColumnsTimeoutChange = useRef<number | null>(null)
+  const canSetCurrentScrollTop = useRef(true)
 
   const showColumnsPreview = useCallback(() => {
     dispatch(configActions.updateShowDot(true))
@@ -268,60 +299,12 @@ export const RenderComponentCanvas: FC<{
     return bounds.width / blockColumns
   }, [blockColumns, bounds.width])
 
-  const componentTree = useMemo(() => {
-    const childrenNode = componentNode.childrenNode
-    return childrenNode?.map((item) => {
-      const containerHeight =
-        componentNode.displayName === "root"
-          ? rowNumber * UNIT_HEIGHT
-          : (componentNode.h - 1) * UNIT_HEIGHT
-      switch (item.containerType) {
-        case "EDITOR_DOT_PANEL":
-          return (
-            <BasicContainer
-              componentNode={item}
-              key={item.displayName}
-              canResizeY={canResizeY}
-              minHeight={minHeight}
-              safeRowNumber={safeRowNumber}
-              addedRowNumber={addedRowNumber}
-              blockColumns={blockColumns}
-            />
-          )
-        case "EDITOR_SCALE_SQUARE":
-          const widget = widgetBuilder(item.type)
-          if (!widget) return null
-          return (
-            <ScaleSquare
-              key={item.displayName}
-              componentNode={item}
-              unitW={unitWidth}
-              unitH={UNIT_HEIGHT}
-              containerHeight={containerHeight}
-              containerPadding={containerPadding}
-              childrenNode={componentNode.childrenNode}
-              collisionEffect={collisionEffect}
-              blockColumns={blockColumns}
-            />
-          )
-        default:
-          return null
-      }
-    })
-  }, [
-    addedRowNumber,
-    blockColumns,
-    canResizeY,
-    collisionEffect,
-    componentNode.childrenNode,
-    componentNode.displayName,
-    componentNode.h,
-    containerPadding,
-    minHeight,
-    rowNumber,
-    safeRowNumber,
+  const { wrapperRef, cursorPositionRef } = useMousePositionAsync(
+    containerRef,
     unitWidth,
-  ])
+    componentNode.displayName,
+    !!sectionName,
+  )
 
   const throttleUpdateComponentPositionByReflow = useMemo(() => {
     return throttle((updateSlice: UpdateComponentNodeLayoutInfoPayload[]) => {
@@ -336,15 +319,13 @@ export const RenderComponentCanvas: FC<{
       newEffectResultMap: Map<string, ComponentNode>,
       itemHeight: number,
     ) => {
-      const { ladingPosition, rectCenterPosition } = dragResult
-      const { landingX, landingY, isOverstep } = ladingPosition
-      setXY([rectCenterPosition.x, rectCenterPosition.y])
-      setLunchXY([landingX, landingY])
-      setCanDrop(isOverstep)
+      const { ladingPosition } = dragResult
+      const { landingY } = ladingPosition
+      const currentRowHeight = landingY / UNIT_HEIGHT
       setRowNumber((prevState) => {
         if (
           canResizeY &&
-          landingY / UNIT_HEIGHT + itemHeight > prevState - safeRowNumber
+          currentRowHeight + itemHeight > prevState - safeRowNumber
         ) {
           return landingY / UNIT_HEIGHT + itemHeight + safeRowNumber
         } else {
@@ -368,7 +349,7 @@ export const RenderComponentCanvas: FC<{
     ],
   )
 
-  const [{ isActive, nodeWidth, nodeHeight }, dropTarget] = useDrop<
+  const [{ isActive }, dropTarget] = useDrop<
     DragInfo,
     DropResultInfo,
     DropCollectedInfo
@@ -384,10 +365,10 @@ export const RenderComponentCanvas: FC<{
         }
         if (monitor.isOver({ shallow: true }) && monitor.getClientOffset()) {
           const {
-            dragResult,
             reflowUpdateSlice,
             newEffectResultMap,
             scaleItem,
+            dragResult,
           } = moveCallback(
             dragInfo,
             blockColumns,
@@ -395,11 +376,39 @@ export const RenderComponentCanvas: FC<{
             monitor,
             containerRef,
             unitWidth,
-            canvasBoundingClientRect,
+            canvasBoundingClientRect!,
             canResizeY,
             containerPadding,
             isFreezeCanvas,
+            currentDragStartScrollTop.current,
           )
+          const { draggedSelectedComponents } = dragInfo
+          const displayNames = draggedSelectedComponents.map(
+            (node) => node.displayName,
+          )
+          const { ladingRelativePosition, mouseOffset } = dragResult
+
+          const fixPosition = fixedPosition(
+            ladingRelativePosition.x,
+            ladingRelativePosition.y,
+            scaleItem.w,
+            blockColumns,
+          )
+
+          sendShadowMessageHandler(
+            1,
+            componentNode.displayName,
+            displayNames,
+            mouseOffset.mouseXOffsetInt,
+            mouseOffset.mouseYOffsetInt,
+            mouseOffset.mouseXOffsetDec,
+            mouseOffset.mouseYOffsetDec,
+            fixPosition.x,
+            fixPosition.y,
+            scaleItem.w,
+            scaleItem.h,
+          )
+
           moveEffect(
             dragResult,
             reflowUpdateSlice,
@@ -411,11 +420,13 @@ export const RenderComponentCanvas: FC<{
       drop: (dragInfo, monitor) => {
         const isDrop = monitor.didDrop()
         const dropResult = monitor.getDropResult()
-        const { item, currentColumnNumber } = dragInfo
+        const { item, currentColumnNumber, draggedSelectedComponents } =
+          dragInfo
         if (
           (isDrop || item.displayName === componentNode.displayName) &&
           dropResult
         ) {
+          canSetCurrentScrollTop.current = true
           return {
             isDropOnCanvas: dropResult.isDropOnCanvas,
           }
@@ -468,18 +479,55 @@ export const RenderComponentCanvas: FC<{
             }
           }
 
-          let dragResult = getDragResult(
-            monitor,
-            containerRef,
-            scaleItem,
-            unitWidth,
-            UNIT_HEIGHT,
-            bounds.width,
+          const scaleItemsShape = getLargeItemSharpe(
+            draggedSelectedComponents,
+            blockColumns,
+            currentColumnNumber,
+          )
+          scaleItem = {
+            ...scaleItem,
+            ...scaleItemsShape,
+            displayName: "largeItem",
+            type: "LARGE_ITEM",
+          }
+
+          const containerClientRect =
+            containerRef.current?.getBoundingClientRect()
+          const containerPosition = {
+            x: containerClientRect?.x || 0,
+            y: containerClientRect?.y || 0,
+          }
+          const scrollTop = containerRef.current?.scrollTop
+          const clientOffset = monitor.getClientOffset()
+          const initialClientOffset = monitor.getInitialClientOffset()
+          const initialSourceClientOffSet =
+            monitor.getInitialSourceClientOffset()
+
+          const dragResult = getDragResult(
             actionName,
+            clientOffset!,
+            initialClientOffset!,
+            initialSourceClientOffSet!,
+            containerPosition,
+            scrollTop,
+            unitWidth,
+            scaleItem,
+            bounds.width,
             bounds.height,
             canResizeY,
             containerPadding,
             containerPadding,
+            {
+              x:
+                scaleItem.x * unitWidth +
+                containerPadding +
+                containerPosition!.x,
+              y:
+                scaleItem.y * UNIT_HEIGHT +
+                containerPadding +
+                containerPosition!.y -
+                currentDragStartScrollTop.current,
+            },
           )
           const { ladingPosition } = dragResult
           const { landingX, landingY } = ladingPosition
@@ -498,6 +546,37 @@ export const RenderComponentCanvas: FC<{
             isDragging: false,
           }
 
+          const relativePositionWithComponentNode =
+            draggedSelectedComponents.map((node) => {
+              const scaleNode = getScaleItem(
+                blockColumns,
+                currentColumnNumber,
+                node,
+              )
+              const relativeX = scaleNode.x - scaleItemsShape.x
+              const scaleX = getScaleResult(
+                relativeX,
+                blockColumns,
+                currentColumnNumber,
+              )
+              return {
+                ...scaleNode,
+                x: scaleX,
+                y: scaleNode.y - scaleItemsShape.y,
+                unitW: unitWidth,
+                unitH: UNIT_HEIGHT,
+                parentNode: componentNode.displayName || "root",
+              }
+            })
+
+          const realPositionWithComponentNode =
+            relativePositionWithComponentNode.map((node) => {
+              return {
+                ...node,
+                x: node.x + newItem.x,
+                y: node.y + newItem.y,
+              }
+            })
           /**
            * add new nodes
            */
@@ -506,54 +585,84 @@ export const RenderComponentCanvas: FC<{
               dispatch(
                 componentsActions.addModalComponentReducer({
                   currentPageDisplayName,
-                  modalComponentNode: newItem,
+                  modalComponentNode: realPositionWithComponentNode[0],
                 }),
               )
             } else {
-              dispatch(componentsActions.addComponentReducer([newItem]))
+              dispatch(
+                componentsActions.addComponentReducer(
+                  realPositionWithComponentNode,
+                ),
+              )
             }
           } else {
             /**
              * update node when change container
              */
-            if (oldParentNodeDisplayName !== componentNode.displayName) {
-              dispatch(
-                componentsActions.updateComponentContainerReducer({
-                  isMove: false,
-                  updateSlice: [
-                    {
-                      component: newItem,
-                      oldParentDisplayName: oldParentNodeDisplayName,
-                    },
-                  ],
-                }),
-              )
-            }
-            dispatch(
-              componentsActions.updateComponentLayoutInfoReducer({
-                displayName: newItem.displayName,
+            const updateSlice = realPositionWithComponentNode.map((node) => {
+              return {
+                displayName: node.displayName,
                 layoutInfo: {
-                  x: newItem.x,
-                  y: newItem.y,
-                  w: newItem.w,
-                  h: newItem.h,
-                  unitW: newItem.unitW,
-                  unitH: newItem.unitH,
-                },
-                statusInfo: {
-                  isDragging: false,
+                  x: node.x,
+                  y: node.y,
+                  w: node.w,
+                  h: node.h,
                 },
                 options: {
                   parentNode: newItem.parentNode,
                 },
+              }
+            })
+            const childrenUpdateSlice: UpdateComponentNodeLayoutInfoPayload[] =
+              []
+            if (oldParentNodeDisplayName !== componentNode.displayName) {
+              const updateContainerSlice = realPositionWithComponentNode.map(
+                (node) => {
+                  return {
+                    component: node,
+                    oldParentDisplayName: oldParentNodeDisplayName,
+                  }
+                },
+              )
+              getChildrenNodeUpdateSlice(newItem, childrenUpdateSlice)
+              dispatch(
+                componentsActions.updateComponentContainerReducer({
+                  isMove: false,
+                  updateSlice: updateContainerSlice,
+                }),
+              )
+            }
+            dispatch(
+              componentsActions.batchUpdateComponentLayoutInfoReducer([
+                ...updateSlice,
+                ...childrenUpdateSlice,
+              ]),
+            )
+
+            dispatch(
+              componentsActions.updateComponentStatusInfoReducer({
+                displayName: newItem.displayName,
+                statusInfo: {
+                  isDragging: false,
+                },
               }),
             )
           }
+          const mousePosition = cursorPositionRef.current
+          sendMousePositionHandler(
+            componentNode.displayName,
+            mousePosition.xInteger,
+            mousePosition.yInteger,
+            mousePosition.xMod,
+            mousePosition.yMod,
+          )
           setCollisionEffect(new Map())
+          canSetCurrentScrollTop.current = true
           return {
             isDropOnCanvas: true,
           }
         }
+        canSetCurrentScrollTop.current = true
         return {
           isDropOnCanvas: false,
         }
@@ -563,24 +672,11 @@ export const RenderComponentCanvas: FC<{
         if (!dragInfo) {
           return {
             isActive: monitor.canDrop() && monitor.isOver({ shallow: true }),
-            nodeWidth: 0,
-            nodeHeight: 0,
           }
         }
-        const { item, currentColumnNumber } = dragInfo
-        let nodeWidth = item?.w ?? 0
-        let nodeHeight = item?.h ?? 0
-
-        nodeWidth =
-          Math.ceil(nodeWidth * (blockColumns / currentColumnNumber)) <
-          (item?.minW ?? 2)
-            ? item?.minW ?? 2
-            : Math.ceil(nodeWidth * (blockColumns / currentColumnNumber))
 
         return {
           isActive: monitor.canDrop() && monitor.isOver({ shallow: true }),
-          nodeWidth: nodeWidth,
-          nodeHeight: nodeHeight,
         }
       },
     }),
@@ -588,24 +684,84 @@ export const RenderComponentCanvas: FC<{
       bounds,
       unitWidth,
       UNIT_HEIGHT,
-      canDrop,
       isFreezeCanvas,
       componentNode,
       currentPageDisplayName,
     ],
   )
 
+  const componentTree = useMemo(() => {
+    const componentNodes = batchMergeLayoutInfoToComponent(
+      widgetExecutionLayoutInfo,
+      componentNode.childrenNode ?? [],
+    )
+    return componentNodes
+      .sort((a, b) => (a.y > b.y ? 1 : -1))
+      .map((item) => {
+        const containerHeight =
+          componentNode.displayName === "root"
+            ? rowNumber * UNIT_HEIGHT
+            : (componentNode.h - 1) * UNIT_HEIGHT
+        switch (item.containerType) {
+          case "EDITOR_DOT_PANEL":
+            return (
+              <BasicContainer
+                componentNode={item}
+                key={item.displayName}
+                canResizeY={canResizeY}
+                minHeight={minHeight}
+                safeRowNumber={safeRowNumber}
+                addedRowNumber={addedRowNumber}
+                blockColumns={blockColumns}
+              />
+            )
+          case "EDITOR_SCALE_SQUARE":
+            const widget = widgetBuilder(item.type)
+            if (!widget) return null
+            return (
+              <ScaleSquare
+                key={item.displayName}
+                componentNode={item}
+                unitW={unitWidth}
+                unitH={UNIT_HEIGHT}
+                containerHeight={containerHeight}
+                containerPadding={containerPadding}
+                childrenNode={componentNode.childrenNode}
+                collisionEffect={collisionEffect}
+                blockColumns={blockColumns}
+              />
+            )
+          default:
+            return null
+        }
+      })
+  }, [
+    addedRowNumber,
+    blockColumns,
+    canResizeY,
+    collisionEffect,
+    componentNode.childrenNode,
+    componentNode.displayName,
+    componentNode.h,
+    containerPadding,
+    minHeight,
+    rowNumber,
+    safeRowNumber,
+    unitWidth,
+    widgetExecutionLayoutInfo,
+  ])
+
   const maxY = useMemo(() => {
     let maxY = 0
     const componentNodes = batchMergeLayoutInfoToComponent(
-      widgetExecutionResult,
+      widgetExecutionLayoutInfo,
       componentNode.childrenNode ?? [],
     )
     componentNodes.forEach((node) => {
       maxY = Math.max(maxY, node.y + node.h)
     })
     return maxY
-  }, [componentNode.childrenNode, widgetExecutionResult])
+  }, [componentNode.childrenNode, widgetExecutionLayoutInfo])
 
   const finalRowNumber = useMemo(() => {
     return Math.max(
@@ -622,19 +778,6 @@ export const RenderComponentCanvas: FC<{
           finalRowNumber + addedRowNumber >= rowNumber
         ) {
           setRowNumber(finalRowNumber + addedRowNumber)
-          // if (
-          //   canAutoScroll &&
-          //   rowNumber !== 0 &&
-          //   finalRowNumber + addedRowNumber !== rowNumber
-          // ) {
-          //   clearTimeout(autoScrollTimeoutID.current)
-          //   autoScrollTimeoutID.current = window.setTimeout(() => {
-          //     containerRef.current?.scrollBy({
-          //       top: (addedRowNumber * UNIT_HEIGHT) / 4,
-          //       behavior: "smooth",
-          //     })
-          //   }, 60)
-          // }
         } else {
           setRowNumber(finalRowNumber)
         }
@@ -668,10 +811,11 @@ export const RenderComponentCanvas: FC<{
             monitor,
             containerRef,
             unitWidth,
-            canvasBoundingClientRect,
+            canvasBoundingClientRect!,
             canResizeY,
             containerPadding,
             isFreezeCanvas,
+            currentDragStartScrollTop.current,
           )
         moveEffect(
           dragResult,
@@ -695,9 +839,27 @@ export const RenderComponentCanvas: FC<{
   ])
 
   useEffect(() => {
+    if (!isActive) {
+      setCollisionEffect(new Map())
+    }
+  }, [isActive])
+
+  useEffect(() => {
+    if (isActive && canSetCurrentScrollTop.current) {
+      currentDragStartScrollTop.current = containerRef.current?.scrollTop ?? 0
+      canSetCurrentScrollTop.current = false
+    }
+
+    return () => {
+      if (canSetCurrentScrollTop.current) {
+        currentDragStartScrollTop.current = 0
+      }
+    }
+  }, [containerRef, dragDropManager, isActive])
+
+  useEffect(() => {
     if (!containerRef.current) return
 
-    const dragInfo = dragDropManager.getMonitor().getItem()
     const monitor = dragDropManager.getMonitor() as any
 
     const scrollHandler = () => {
@@ -711,7 +873,7 @@ export const RenderComponentCanvas: FC<{
       // eslint-disable-next-line react-hooks/exhaustive-deps
       containerRef.current?.removeEventListener("scroll", scrollHandler)
     }
-  }, [containerRef, dragDropManager, throttleScrollEffect])
+  }, [containerRef, dragDropManager, dragInfo, throttleScrollEffect])
 
   useEffect(() => {
     if (!currentCanvasRef.current) return
@@ -745,59 +907,77 @@ export const RenderComponentCanvas: FC<{
     }
   }, [containerRef, isActive])
 
-  if (
-    isEditMode &&
-    componentNode.type === "CANVAS" &&
-    (!Array.isArray(componentNode.childrenNode) ||
-      componentNode.childrenNode.length === 0) &&
-    !isShowCanvasDot
-  ) {
-    return <ContainerEmptyState minHeight={minHeight} />
-  }
-
   return (
     <div
       ref={(node) => {
         currentCanvasRef.current = node
+        wrapperRef.current = node
         dropTarget(node)
         canvasRef(node)
       }}
+      data-isroot={!!sectionName}
       id="realCanvas"
       className="illa-canvas"
-      css={applyComponentCanvasStyle(
-        bounds.width,
-        bounds.height,
-        bounds.width / blockColumns,
-        UNIT_HEIGHT,
-        isShowCanvasDot,
-        rowNumber * 8,
-        minHeight,
-      )}
-      onClick={(e) => {
-        if (e.target === currentCanvasRef.current && !isProductionMode) {
-          dispatch(configActions.updateSelectedComponent([]))
-          clearComponentAttachedUsersHandler(selectedComponents || [])
-        }
-      }}
+      css={[
+        applyComponentCanvasStyle(
+          bounds.width,
+          bounds.height,
+          bounds.width / blockColumns,
+          UNIT_HEIGHT,
+          isShowCanvasDot,
+          rowNumber * 8,
+          minHeight,
+        ),
+        selectoSelectionStyle,
+      ]}
     >
-      {componentTree}
-      {isActive && (
-        <PreviewPlaceholder
-          x={xy[0]}
-          y={xy[1]}
-          lunchX={lunchXY[0]}
-          lunchY={lunchXY[1]}
-          w={nodeWidth * unitWidth}
-          h={nodeHeight * UNIT_HEIGHT}
-          canDrop={canDrop}
+      <DragShadowPreview
+        unitW={unitWidth}
+        parentDisplayName={componentNode.displayName}
+        columns={blockColumns}
+      />
+      <MousePreview unitW={unitWidth} displayName={componentNode.displayName} />
+      {isEditMode &&
+        componentNode.type === "CANVAS" &&
+        (!Array.isArray(componentNode.childrenNode) ||
+          componentNode.childrenNode.length === 0) &&
+        !isShowCanvasDot && <ContainerEmptyState minHeight={minHeight} />}
+      {Array.isArray(componentNode.childrenNode) &&
+        componentNode.childrenNode.length > 0 &&
+        componentTree}
+      {isActive && dragInfo && (
+        <DragPreview
+          containerRef={containerRef}
+          canResizeY={canResizeY}
+          unitWidth={unitWidth}
+          canvasHeight={bounds.height}
+          canvasWidth={bounds.width}
+          containerLeftPadding={containerPadding}
+          containerTopPadding={containerPadding}
+          columnNumber={blockColumns}
+          containerWidgetDisplayName={componentNode.displayName}
+          currentDragStartScrollTop={currentDragStartScrollTop.current}
+        />
+      )}
+      <MultiSelectCanvas
+        currentCanvasRef={currentCanvasRef}
+        containerRef={containerRef}
+        canvasNodeDisplayName={componentNode.displayName}
+      />
+      {!dragDropManager.getMonitor().isDragging() && (
+        <MultiSelectedScaleSquare
+          unitW={unitWidth}
+          containerDisplayName={componentNode.displayName}
         />
       )}
       {isShowCanvasDot && <div css={borderLineStyle} />}
-      <FreezePlaceholder
-        effectMap={collisionEffect}
-        unitW={unitWidth}
-        unitH={UNIT_HEIGHT}
-      />
+      {isActive && (
+        <FreezePlaceholder
+          effectMap={collisionEffect}
+          unitW={unitWidth}
+          unitH={UNIT_HEIGHT}
+        />
+      )}
       <AnimatePresence>
         {componentNode.type === "CONTAINER_NODE" && ShowColumnsChange && (
           <PreviewColumnsChange unitWidth={unitWidth} columns={blockColumns} />

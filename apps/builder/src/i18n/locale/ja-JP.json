@@ -127,7 +127,7 @@
       "form": {
         "btn": {
           "back": "あとずさりする",
-          "save_changes": "資源を節約する",
+          "save_changes": "リソースを保存",
           "test_connection": "テスト接続"
         },
         "required": "これは必須です",
@@ -143,6 +143,9 @@
           },
           "oracle": {
             "oracle": "Oracle DB"
+          },
+          "gs": {
+            "google_sheets": "Google Sheets"
           }
         },
         "validate": {
@@ -175,6 +178,26 @@
           "restapi": {
             "certificates": "証明書",
             "verification_mode": "検証モード"
+          },
+          "gs": {
+            "private_key": "秘密鍵",
+            "action_type": "アクションタイプ",
+            "spreadsheet": "スプレッドシート",
+            "sheet_name": "シート名",
+            "data_range": "データ範囲",
+            "limit": "Limit",
+            "offset": "Offset",
+            "a1_notation": "A1表記",
+            "values_to_append": "追加する値",
+            "filter_by": "フィルタ条件",
+            "update_value": "更新する値",
+            "primary_key_column": "主キー列名",
+            "array_of_rows_to_upd": "更新する行の配列",
+            "filters_to_match_row": "Filters to match row",
+            "consider_queries_tha": "行を削除しないクエリを成功と見なす",
+            "title_of_spreadsheet": "タイトル",
+            "sheet_id_to_copy": "コピーするシートID",
+            "sheet_to_copy_to": "コピー先のシート"
           }
         },
         "placeholder": {
@@ -200,6 +223,20 @@
           "oracle": {
             "username": "oracle",
             "password": "••••••••"
+          },
+          "gs": {
+            "private_key": "{\r\n  \"type\": \"service_account\",\r\n  \"project_id\": \"projectId\",\r\n  \"private_key_id\": \"privateKeyId\",\r\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\r\nprivateKey\r\n-----END PRIVATE KEY-----\",\r\n  \"client_email\": \"clientEmail\",\r\n  \"client_id\": \"100000000000000000000\",\r\n  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\r\n  \"token_uri\": \"https://oauth2.googleapis.com/token\",\r\n  \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\r\n  \"client_x509_cert_url\": \"clientx509CertUrl\"\r\n}",
+            "row_filter": {
+              "column_name": "column_name",
+              "value": "値"
+            },
+            "update_value": "{{ [ {\r\n\"column1\":\"newValue1\",\r\n\"column2\":\"newValue2\"\r\n} ] }}",
+            "primary_key_column": "column_name",
+            "array_of_rows_to_upd": "{{ table1.recordUpdates }}",
+            "filters_to_match_row": {
+              "key": "キー値",
+              "value": "値"
+            }
           }
         },
         "tips": {
@@ -215,6 +252,18 @@
             "verification_mode": {
               "skip_ca_certificate": "サーバーが攻撃に対して脆弱である可能性があります"
             }
+          },
+          "gs": {
+            "private_key": "Google スプレッドシートへの接続に使用されます。 <0>ここ</0>をクリックしてプロジェクトを作成し、OAuth 認証情報を取得してください。 サービス アカウント認証では、使用されているサービス アカウントに対応するメール アドレスで共有されたスプレッドシートにのみアクセスできます。 サービス アカウントとアクセス キーの作成に関するドキュメントについては、<1>こちら</1>をご覧ください。ユーザーは、スプレッドシートで制御されていないさまざまな処理コンポーネントの制限を経験する場合があります。 <2>割り当て制限</2>の詳細",
+            "leave_blank_to_selec": "空白のままにして最初のシートを選択します",
+            "to_select_the_first_": "To select the first five cells in the first column of a sheet titled sheet1, A1 notation is sheet1!A1:A5. <0>See Google's docs for more information. <0>",
+            "values_to_append": "{{ [ {\r\n\"column1\":\"newValue1\",\r\n\"column2\":\"newValue2\"\r\n} ] }}",
+            "a1_notation": "sheet1 というタイトルのシートの最初の列の最初の 5 つのセルを選択するには、A1 表記は sheet1!A1:A5 です。 <0>詳細については、Google のドキュメントを参照してください。 <0>",
+            "sheet_id_to_copy": "これは、Google スプレッドシートの URL の ?gid=123123 を参照してください。",
+            "copy_to_sheet_name": "必要。 コピーしたシートの名前を変更します。"
+          },
+          "tidb": {
+            "ca_certificate": "デフォルトで、サーバーレス層への TLS 接続に使用される CA 証明書を入力します。 Dedicated Tier への TLS 接続が必要な場合は、<0>ここをクリック</0>して構成方法を表示してください。"
           }
         },
         "option": {
@@ -268,11 +317,37 @@
               "verify_ca_certificat": "サーバー証明書を確認する",
               "skip_ca_certificate_": "サーバー証明書の検証をスキップ"
             }
+          },
+          "gs": {
+            "action_type": {
+              "read_data_from_a_spr": "スプレッドシートからデータを読み取る",
+              "append_data_to_a_spr": "スプレッドシートにデータを追加する",
+              "update_a_spreadsheet": "スプレッドシートを更新",
+              "bulk_update_a_spread": "主キーによるスプレッドシートの一括更新",
+              "delete_a_single_row_": "スプレッドシートを更新",
+              "create_a_spreadsheet": "スプレッドシートを作成",
+              "copy_a_single_sheet_": "1 つのシートを別のスプレッドシートにコピーする",
+              "list_available_sprea": "利用可能なスプレッドシートを表示",
+              "get_spreadsheet_info": "スプレッドシート情報を取得"
+            },
+            "data_range": {
+              "use_a1_notation": "A1表記を使用",
+              "use_limit_and_offset": "制限とオフセットを使用"
+            },
+            "filter_by": {
+              "use_a1_notation": "A1表記を使用",
+              "use_row_filters": "行フィルターを使用"
+            }
           }
         },
         "default": {
           "appwrite": {
             "limit": " {{ 1000 }}"
+          }
+        },
+        "group": {
+          "gs": {
+            "service_account": "サービスアカウント"
           }
         }
       },
@@ -281,10 +356,11 @@
           "disable": "閉鎖",
           "enable": "オンにする",
           "new": "追加",
-          "run": "走る",
+          "run": "実行する",
           "save": "保存",
           "save_and_run": "保存して実行",
-          "save_fail": "保存に失敗しました"
+          "save_fail": "保存に失敗しました",
+          "test_run": "テストの実行"
         },
         "elastic": {
           "action_type": "アクションタイプ",
@@ -360,7 +436,7 @@
               "dig": "delegated-by",
               "us-east-1": "us-east-1",
               "authenticate_using_t": "Authenticate using the HTTP Authorization header instead of query parameters",
-              "find_instructions_on": "Find instructions on where to find access keys <0>in the AWS docs<0>.",
+              "find_instructions_on": "<0>AWS ドキュメント</0>でアクセス キーの場所に関する説明を見つけてください。",
               "role_to_assume": "Use a <0>different role<0> when accessing the API"
             }
           },
@@ -370,8 +446,8 @@
                 "list": "リストレコード",
                 "retrieve": "レコードを取得する",
                 "create": "レコードを作成",
-                "update": "Update record",
-                "delete": "Delete record",
+                "update": "更新記録",
+                "delete": "レコードを削除",
                 "find": "探す",
                 "get": "ビューを取得"
               },
@@ -680,7 +756,7 @@
             "private_key": "秘密鍵",
             "private_key_hover": "The private key is associated with a Service Account with Firebase privileges.",
             "ssl_options": "SSL オプション",
-            "username_password": "ユーザー名パスワード",
+            "username_password": "ユーザー名/パスワード",
             "self_signed_certificate": "自己署名証明書を使用",
             "disable_introspection": "Disable Introspection",
             "value": "Value",
@@ -706,7 +782,7 @@
             "certificate": "-----証明書の開始-----\n MIIEMDCCapigAwIBAgIDI2GWMA0GCSqGSIb3DQEBDAUAMDoxODA2BgNVBAMML2Fm\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n ...\n ---エンド証明書-----",
             "database": "acme_production",
             "database_index": "デフォルト 0",
-            "hostname": "CPU名",
+            "hostname": "ホスト名",
             "hosturl": "たとえば、https://example.com",
             "mongo_certificate": "-----RSA 秘密鍵の開始-----\n MIIEMDCCapigAwIBAgIDI2GWMA0GCSqGSIb3DQEBDAUAMDoxODA2BgNVBAMML2Fm\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n ...\n -----END RSA 秘密鍵-----\n -----証明書の開始-----\n MIIEMDCCapigAwIBAgIDI2GWMA0GCSqGSIb3DQEBDAUAMDoxODA2BgNVBAMML2Fm\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n DTE5MDQwODAzNDIyMloXDTI5MDQwNTAzNDIyMlowOjE4MDYGA1UEAwwvYWY1ZjU4\n ...\n ---エンド証明書-----\n",
             "name": "つまり、「Users DB(readonly)」または「Internal Admin API」",
@@ -864,7 +940,7 @@
           }
         },
         "button": {
-          "copy_ip": "IPをコピー"
+          "copy_ip": "コピー"
         }
       },
       "resource_choose": {
@@ -918,7 +994,20 @@
       "actions_title": "アクションリスト",
       "components_title": "コンポーネントリスト",
       "globals_title": "グローバル変数",
-      "pages_title": "ページリスト"
+      "pages_title": "ページリスト",
+      "global_data_modal": {
+        "title": "グローバル データの編集",
+        "variable_name": {
+          "tooltips": "Use the initial value in this app via {{variableName}}",
+          "label": "変数名",
+          "message": "変数名を入力してください。"
+        },
+        "initial_value": {
+          "label": "초기 값",
+          "tooltips": "オブジェクトまたはプリミティブ値をサポートします。 例: { カウント: 0 }",
+          "placeholder": "{ count: 0 }"
+        }
+      }
     },
     "deploy": {
       "fail": "展開に失敗しました"
@@ -1003,13 +1092,15 @@
           "sortingChange": "変化で並べ替え",
           "submit": "確認する",
           "success": "成功後",
-          "onOpenModal": "Open modal",
-          "onCloseModal": "Close modal",
+          "onOpenModal": "モーダルを開く",
+          "onCloseModal": "モーダルを閉じる",
           "play": "再生",
           "pause": "一時停止",
           "ended": "終了済み",
           "loaded": "ロード済み",
-          "rowSelect": "行を選択"
+          "rowSelect": "行を選択",
+          "markerSelected": "マーカーを選択",
+          "markerCreated": "マーカーを作成"
         },
         "image_list": {
           "title": "イメージ",
@@ -1054,6 +1145,13 @@
         "size_type": {
           "kb": "KB",
           "mb": "MB"
+        },
+        "time_picker": {
+          "select_time": "時間を選択"
+        },
+        "time_range": {
+          "start_placeholder": "始まる時間",
+          "end_placeholder": "終了時間"
         }
       },
       "setter_group": {
@@ -1200,7 +1298,9 @@
         "scale_type": "ズームタイプ",
         "set_router": "ルーティングを設定する",
         "set_temporary_state": "一時的な状態を設定",
-        "shadow": "影の多い",
+        "shadow": {
+          "shadow": "影"
+        },
         "show_character_count": "文字数表示",
         "show_clear_button": "クリアボタンを表示",
         "show_footer": "表示操作エリア",
@@ -1257,12 +1357,12 @@
         "max_size": "最大サイズ",
         "min_size": "最小サイズ",
         "text_overflow": "オーバーフロー",
-        "file_url": "ファイル の URL",
+        "file_url": "PDFソース",
         "show_tool_bar": "ツールバーを表示",
         "scale": "ズームページ",
         "scroll": "各ページへのスナップスクロール",
         "min_max_size": "最小～最大のサイズ",
-        "video_url": "ビデオ URL",
+        "video_url": "ビデオソース",
         "autoplay": "自動再生",
         "loop": "ループ",
         "volume": "音量",
@@ -1291,13 +1391,53 @@
           "collapse_icon": "アコーディオンパネル",
           "icon_color": "色"
         },
-        "choose_at_least": "Choose at least",
-        "choose_up_to": "Choose up to",
+        "choose_at_least": "最低の選択",
+        "choose_up_to": "最も選ばれた",
         "copy_to_clipboard": "クリップボードにコピー",
         "file_download": {
-          "file_data": "File data",
-          "file_name": "File name with extension",
-          "file_type": "File type"
+          "file_data": "ファイルデータ",
+          "file_name": "拡張子を含まないファイル名",
+          "file_type": "ファイルの種類"
+        },
+        "action_name": "アクション名",
+        "variable": {
+          "path_of_value": "値のパス",
+          "variable": "グローバル データ"
+        },
+        "code": {
+          "write_code": "コードを書く"
+        },
+        "slider": {
+          "step_size": "刻み幅",
+          "minimum": "最小値",
+          "maximum": "最大値",
+          "hide_output": "出力を隠す",
+          "prefix_icon": "プレフィックス アイコン",
+          "suffix_icon": "サフィックスアイコン",
+          "allow_wrapping": "オートラッピング"
+        },
+        "range_slider": {
+          "start_value": "開始値",
+          "end_value": "終了値"
+        },
+        "name": "名前",
+        "audio": {
+          "audio_url": "音声ソース"
+        },
+        "map": {
+          "markers": "マーカー",
+          "initial_location": "初期位置",
+          "default_markers": "デフォルトのマーカー",
+          "latitude_field_name": "緯度フィールド名",
+          "longitude_field_name": "経度フィールド名",
+          "zoom": "ズーム",
+          "enable_add_markers": "マーカーの追加を有効にする",
+          "enable_search_locati": "検索場所を有効にする",
+          "enable_clustering": "クラスタリングを有効にする"
+        },
+        "time_range": {
+          "start_time": "始まる時間",
+          "end_time": "終了時間"
         }
       },
       "setter_tooltip": {
@@ -1338,7 +1478,7 @@
         "file_url": "Web 上の PDF URL、または PDF ファイルの base64 エンコード データをサポートします。 例: {{ data:application/pdf;base64, example-data }}",
         "scale": "各ページをスケーリングして、コンポーネントの幅または高さを埋めます。",
         "scroll": "スクロール時に各ページの先頭に自動的にロケートします。",
-        "video_url": "ほとんどのビデオ サービスまたは一般的なビデオ ファイル タイプへの直接リンクをサポートします。",
+        "video_url": "ほとんどのビデオ サービスまたは一般的なビデオ ファイル タイプへの直接リンクをサポートします、または動画ファイルの base64 エンコード データ。 例: {{ data:audio/mp4;base64,exampleDate}}",
         "collapse": {
           "type": "折りたたみ可能なリスト: リスト、すべてのアイテムは最初のアイテムのスタイルを自動的にコピーします。 {{ currentItem.columnName }} を使用して、各アイテムのコンポーネント データを指定できます。 折りたたみ可能なパネル: 各パネルは独立しており、各アイテムのコンポーネント スタイルとデータを個別に指定できます。",
           "items": "アイテムの数",
@@ -1349,7 +1489,7 @@
       "unselected_tip1": "コンポーネントが選択されていません。",
       "unselected_tip2": "コンポーネントをクリックして選択してください。",
       "setter": {
-        "click_mask_close": "Click mask to close modal",
+        "click_mask_close": "マスクをクリックしてモーダルを閉じます",
         "modal": {
           "blank": "アイコンなし"
         }
@@ -1362,7 +1502,61 @@
           "data_source": "マップされた評価を使用してイメージ アイテムを定義するためのデータ ソース。 値の配列または配列にマップされたキーのオブジェクトのいずれかを使用します。 例: {{[{ x:1, y:1 },{ x:2, y:2 },...]}} . アクションでデータを使用することもできます。 例: {{ mysql1.data }}"
         },
         "file_download": {
-          "file_data": "Support base64 data, raw data, mapped data of table. "
+          "file_data": "テーブルの base64 データ、生データ、マップされたデータをサポートします"
+        },
+        "variable": {
+          "available_in_objects": "オブジェクトと配列で利用できます。 変数の値をオブジェクト形式で設定するには、attributeName を使用します。 たとえば、{\"a\":1, \"b\":2} の \"b\" の値を変更するには、パス\n  b である必要があります。\n\n変数の値を配列形式で設定するには、{{index}} を使用します。 たとえば、\"d\" を \"t\" [\"a\",\"b\",\"c\",\"d\"] に変更するには、パスは {{ 3 }} または {{globalData.state1.indexOf(\"d \")}}。",
+          "the_target_value": "目標値"
+        },
+        "slider": {
+          "default_value": "スライダーの初期値。 {{}} に JavaScript を入力すると、初期値を動的に変更できます。",
+          "minimum": "スライダーの最小値",
+          "maximum": "スライダーの最大値",
+          "step_size": "スライドの最小変化単位",
+          "label": "ユーザーに表示されるフィールドの名前",
+          "caption": "フィールドを詳細に説明するために使用されるキャプション",
+          "hide_label": "ラベルを表示するかどうかを設定します",
+          "allow_wrapping": "ラベルのラッピングを許可するかどうかを設定します",
+          "position": "コンポーネントに対するラベルの位置を設定します",
+          "alignment": "ラベルの配置を設定する",
+          "width": "ラベルがコンポーネントの左側にある場合、ラベルの幅の比率を設定します",
+          "prefix_icon": "コンポーネントの前に表示されるアイコン",
+          "suffix_icon": "コンポーネントの後に表示されるアイコン",
+          "hide_output": "スライド時に値を非表示にするかどうかを設定します"
+        },
+        "step": {
+          "default_step": "既定のステップ",
+          "show_step_number": "ステップ番号を表示",
+          "indicate_completed_steps": "完了した手順を示す"
+        },
+        "range_slider": {
+          "start_value": "範囲の最小値を設定します",
+          "end_value": "範囲の最大値を設定します"
+        },
+        "audio": {
+          "audio_url": "一般的なオーディオ ファイル タイプへの直接リンク、または一部のオーディオ サービスへのリンクをサポート、またbase64 でエンコードされたオーディオ ファイルのデータ。 例: {{ data:audio/mp3;base64,exampleDate}}"
+        },
+        "map": {
+          "markers": "地図上にマーカーを設定します。 マーカーは、デフォルト マーカーと同じプロパティを持つオブジェクトの配列である必要があります。",
+          "initial_location": "地図を初期化するとき、デフォルトの中央表示位置",
+          "default_markers": "マップの初期化時に表示されるデフォルトのマーカー。 {{}} の JavaScript で動的に設定できます。",
+          "latitude_field_name": "緯度は、初期位置およびデフォルト マーカー オブジェクトのどのプロパティから取得されます。",
+          "longitude_field_name": "経度は、初期位置およびデフォルト マーカー オブジェクトのどのプロパティから取得されます。",
+          "zoom": "マップのズームを設定するには",
+          "enable_add_markers": "ユーザーが地図をクリックしてマーカーを追加できるようにするかどうか",
+          "enable_search_locati": "ユーザーが場所を検索できるようにするかどうか",
+          "enable_clustering": "マップが縮小されたときに複数のマーカーを集約できるようにするかどうか"
+        },
+        "time_picker": {
+          "format": "有効な時刻形式文字列。 フォーマットの詳細: [dayJS](https://day.js.org/docs/en/parse/string-format)",
+          "the_span_of_the_valu": "分単位での値のスパン数",
+          "show_a_clear_button_": "マウスがコンポーネント上にあるときにクリア ボタンを表示します。"
+        },
+        "time_range": {
+          "start_time": "コンポーネントの初期化時に入力される開始時刻",
+          "end_time": "コンポーネントの初期化時に入力される終了時刻",
+          "start_placeholder": "開始時刻が入力されていない場合に表示される情報。",
+          "end_placeholder": "終了時刻が入力されていない場合に表示される情報。"
         }
       },
       "setter_option": {
@@ -1378,8 +1572,8 @@
           "collapsible_panel": "折りたたみ式パネル"
         },
         "file_download": {
-          "auto": "Auto",
-          "plain_text": "Plain text",
+          "auto": "自動",
+          "plain_text": "プレーンテキスト",
           "jpeg": "JPEG",
           "png": "PNG",
           "svg": "SVG",
@@ -1387,6 +1581,12 @@
           "csv": "CSV",
           "tsv": "TSV",
           "excel": "Excel(.xlsx)"
+        },
+        "shadow": {
+          "none": "なし",
+          "large": "大型",
+          "medium": "中型",
+          "small": "小型"
         }
       },
       "setter_placeholder": {
@@ -1407,6 +1607,9 @@
         "file_download": {
           "file_data": "{{ mysql1.data }}",
           "file_name": "{{ new_data.csv }}"
+        },
+        "variable": {
+          "abc": "{{abc.a}}"
         }
       },
       "setter_tootip": {
@@ -1414,7 +1617,21 @@
       },
       "setter_message": {
         "choose_at_least": "Please choose at lease {{ min }} options.",
-        "choose_up_to": "Please choose up to {{max}} options."
+        "choose_up_to": "Please choose up to {{max}} options.",
+        "map": {
+          "zoom": "1 から 22 までの値を設定してください"
+        },
+        "upload": {
+          "size_exceed": "500MB を超えるファイルは解析に失敗する場合があります。",
+          "single_file": "許可されるファイルは 1 つだけです。",
+          "file": "ファイルのみが許可されます。 ディレクトリをアップロードしないでください。",
+          "directory": "ディレクトリのみが許可されます。"
+        }
+      },
+      "setter_description": {
+        "code": {
+          "write_code": "ここにコードを書きます。 {{ }} 内で JavaScript を使用する"
+        }
       }
     },
     "page": {
@@ -1435,7 +1652,7 @@
         "views": "見る",
         "width": "幅",
         "height": "高い",
-        "columns": "Columns"
+        "columns": "コラム"
       },
       "model_tips": {
         "cancel_button": "キャンセル",
@@ -1451,7 +1668,7 @@
       "tooltips": {
         "show_fold_icon": "パネルを折りたたんだり展開したりするためのボタンを表示します",
         "view_path": "このビューにアクセスするための文字列スペル example.com/app/page/",
-        "auto_canvas_width": "The width of page as a percentage of the browser width."
+        "auto_canvas_width": "ブラウザーの幅に対するページの幅のパーセンテージ。"
       }
     },
     "validate_message": {
@@ -1486,7 +1703,7 @@
     },
     "method": {
       "set_hidden": "Set hidden",
-      "set_file_url": "Set file URL",
+      "set_file_url": "Set PDF source",
       "play": "Play",
       "pause": "Pause",
       "seek_to": {
@@ -1494,7 +1711,7 @@
         "unit": "(s)"
       },
       "set_video_url": {
-        "video": "ビデオ URL"
+        "video": "ビデオソース"
       },
       "speed": {
         "speed": "再生速度",
@@ -1527,12 +1744,26 @@
         "showPrevious": "前の可視画像を表示"
       },
       "file_download": {
-        "download": "Download",
+        "download": "ダウンロード",
         "message": {
           "suc": "ダウンロードを開始します",
           "fail": "失敗しました",
           "download_failed": "ダウンロード失敗"
         }
+      },
+      "setGlobalData": "グローバル データ",
+      "setLocalStorage": "ローカルストレージ",
+      "audio": {
+        "set_audio_url": "音声ソースを設定"
+      },
+      "map": {
+        "marker_selected": "マーカーが選択されました",
+        "marker_created": "マーカーが作成されました",
+        "markers_changed": "マーカーが変更されました"
+      },
+      "time_range": {
+        "setstarttime": "setStartTime",
+        "setendtime": "setEndTime"
       }
     },
     "tutorial": {
@@ -1546,7 +1777,7 @@
             "templates": "テンプレート"
           },
           "onboarding_app": {
-            "name": "Onboarding app",
+            "name": "初心者ガイド",
             "description": "アプリケーションの構築方法については、ILLA のチュートリアルに従ってください",
             "action": "始める"
           },
@@ -1575,15 +1806,15 @@
           "drag_input": "ステップ 1: 入力コンポーネントをここにドラッグします",
           "drag_button": "ステップ 2: ボタン コンポーネントをここにドラッグします",
           "drag_table": "ステップ 3: テーブル コンポーネントをここにドラッグします",
-          "exit": "ブートを終了",
-          "do_it": "このステップを手伝ってください",
+          "exit": "終了",
+          "do_it": "自動補完",
           "drag_title": "コンポーネントをキャンバスにドラッグします",
           "modify_action_title": "ACTIONを変更",
-          "modify_action_description_modify": "ACTIONを変更してデータを取得します。 {{input1.value}} を使用して、入力コンポーネントに入力されたデータを取得できます。",
+          "modify_action_description_modify": "ACTIONを変更してデータを取得します。 {{input1.value}} を使用して、入力コンポーネントに入力されたデータを取得できます。\n\nselect * from users\njoin orders\non users.id = orders.id\nwhere {{!input1.value}} or lower(users.name) like '% {{input1.value.toLowerCase()}}%'",
           "modify_action_description_click": "[保存]、[実行] の順にクリックします",
           "display_data_title": "テーブルにデータを表示する",
           "display_data_description_select": "キャンバスでテーブルを選択",
-          "display_data_description_modify": "右側のパネルでデータ ソースを変更します。 {{postgre1.data}} を使用してデータを取得できます。",
+          "display_data_description_modify": "右側のパネルでデータ ソースを変更します。 {{postgresql1.data}} を使用してデータを取得できます。",
           "event_handler_title": "ボタンをクリックしてアクションをトリガーします",
           "event_handler_description_1": "キャンバス上のボタンを選択",
           "event_handler_description_2": "イベント ハンドラーを追加する",
@@ -1595,9 +1826,13 @@
           "test_it_button": "次のステップ",
           "congratulations_title": "おめでとう🎉",
           "congratulations_description": "最初のアプリケーションを作成しました。 使用中に質問がある場合は、<0>Discord<0> からご連絡ください",
-          "congratulations_button": "完成済み"
+          "congratulations_button": "完成済み",
+          "event_handler_description_all": "1. Add an event handler\r\n2. Click the event handler\r\n3. Change the action to trigger action\r\n4. Change the Query to postgresql1"
         }
       }
+    },
+    "global": {
+      "size_exceed": "データサイズが制限を超えています (現在のサイズ: {{current_size}} バイト、制限: {{limit_size}} バイト)"
     }
   },
   "exit_preview": "プレビューを終了",
@@ -1609,7 +1844,7 @@
   "not_online_tips": "ネットワークが切断されています。このデバイスのネットワークを確認してください",
   "preview": {
     "viewport": {
-      "size": "Size",
+      "size": "サイズ",
       "reset": "リセット",
       "save": "保存",
       "tooltip": {
@@ -1912,7 +2147,7 @@
       "vertical": "肖像画"
     },
     "modal": {
-      "name": "Modal"
+      "name": "モーダル"
     },
     "textarea": {
       "name": "長いテキスト入力"
@@ -1941,10 +2176,35 @@
       "name": "Collapse"
     },
     "multiselect": {
-      "name": "Multiselect"
+      "name": "複数選択"
     },
     "carousel": {
       "name": "カルーセル"
+    },
+    "step": {
+      "name": "歩数"
+    },
+    "slider": {
+      "name": "スライダー"
+    },
+    "range_slider": {
+      "name": "レンジスライダー"
+    },
+    "audio": {
+      "name": "音声プレイヤー",
+      "no_audio": "音声なし"
+    },
+    "collaborative": {
+      "no_name": "ノーネーム"
+    },
+    "map": {
+      "name": "地図"
+    },
+    "time_picker": {
+      "name": "タイムピッカー"
+    },
+    "time_range": {
+      "name": "時間範囲"
     }
   },
   "page": {
@@ -2107,7 +2367,7 @@
     }
   },
   "frame_size": {
-    "invalid_tips": "Please enter a value not less than {{ size }}."
+    "invalid_tips": "{{ size }}以上の値を入力してください。"
   },
   "failed_to_copy": "コピーに失敗しました",
   "copied": "コピーしました！",
@@ -2309,8 +2569,16 @@
           "description": "ILLA のチュートリアルに従って、アプリのビルド方法を学びましょう。所要時間は約 5 分です。",
           "cancel": "キャンセル",
           "take": "チュートリアルを開始"
+        },
+        "exit_confirm": {
+          "title": "チュートリアルを終了？",
+          "description": "次回初心者ガイドに入ると、ガイド付きの手順が再生されます",
+          "cancel": "キャンセル",
+          "exit": "終了"
         }
       }
     }
-  }
+  },
+  "oauth_redirect_title": "이동",
+  "oauth_redirect_description": "<0>ILLA Cloud</0> にリダイレクトしています..."
 }

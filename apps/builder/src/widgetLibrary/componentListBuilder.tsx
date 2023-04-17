@@ -44,10 +44,10 @@ const translateChildren = (componentConfigs: WidgetConfig[]) => {
     INPUTS: [],
     SELECT: [],
     CALENDAR: [],
-    PRESENTATION: [],
     DATA: [],
     CONTAINER: [],
     NAVIGATION: [],
+    PRESENTATION: [],
   }
   componentConfigs.forEach((item) => {
     const { sessionType = "COMMON", type, displayName } = item
@@ -78,6 +78,7 @@ export const buildComponentList = (): ComponentSessionProps[] => {
   const keys = Object.keys(configs) as SessionType[]
   return keys.map((key) => {
     return {
+      type: key,
       title: sessionTypeMapSessionNameKey[key],
       widgetCardInfos: configs[key],
     }

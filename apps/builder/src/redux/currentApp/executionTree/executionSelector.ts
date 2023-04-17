@@ -1,16 +1,15 @@
 import { createSelector } from "@reduxjs/toolkit"
-import { cloneDeep, merge } from "lodash"
+import { cloneDeep, get } from "lodash"
 import { getBuilderInfo } from "@/redux/builderInfo/builderInfoSelector"
-import {
-  getActionList,
-  getDisplayNameMapActions,
-} from "@/redux/currentApp/action/actionSelector"
+import { getActionList } from "@/redux/currentApp/action/actionSelector"
 import {
   getAllComponentDisplayNameMapProps,
-  getDisplayNameMapComponent,
+  getFlattenArrayComponentNodes,
+  getOriginalGlobalData,
 } from "@/redux/currentApp/editor/components/componentsSelector"
 import { getCurrentUser } from "@/redux/currentUser/currentUserSelector"
 import { RootState } from "@/store"
+import { batchMergeLayoutInfoToComponent } from "@/utils/drag/drag"
 import { RawTreeFactory } from "@/utils/executionTreeHelper/rawTreeFactory"
 import { isObject } from "@/utils/typeHelper"
 
@@ -20,13 +19,15 @@ export const getRawTree = createSelector(
     getAllComponentDisplayNameMapProps,
     getCurrentUser,
     getBuilderInfo,
+    getOriginalGlobalData,
   ],
-  (actions, widgets, currentUserInfo, builderInfo) => {
+  (actions, widgets, currentUserInfo, builderInfo, globalData) => {
     return RawTreeFactory.create({
       actions: actions ?? [],
       widgets: widgets ?? {},
       currentUserInfo,
       builderInfo,
+      globalData,
     })
   },
 )
@@ -222,6 +223,102 @@ export const getDependenciesMap = (state: RootState) => {
   return state.currentApp.execution.dependencies
 }
 
-export const getIndependenciesMap = (state: RootState) => {
+export const getInDependenciesMap = (state: RootState) => {
   return state.currentApp.execution.independencies
 }
+
+export const getGlobalDataExecutionResult = createSelector(
+  [getExecutionResult],
+  (result) => {
+    return get(result, "globalData", {})
+  },
+)
+
+export const getURLParamsExecutionResult = createSelector(
+  getExecutionResult,
+  (result) => {
+    return get(result, "urlParams", {})
+  },
+)
+
+export const getLocalStorageExecutionResult = createSelector(
+  getExecutionResult,
+  (result) => {
+    return get(result, "localStorage", {})
+  },
+)
+
+export const getGlobalInfoExecutionResult = createSelector(
+  [
+    getCurrentUser,
+    getBuilderInfo,
+    getURLParamsExecutionResult,
+    getLocalStorageExecutionResult,
+  ],
+  (currentUserInfo, builderInfo, urlParams, localStorage) => {
+    const globalInfo: Record<string, any>[] = [
+      {
+        ...currentUserInfo,
+        displayName: "currentUserInfo",
+      },
+      {
+        ...builderInfo,
+        displayName: "builderInfo",
+      },
+      {
+        ...urlParams,
+        displayName: "urlParams",
+      },
+      {
+        ...localStorage,
+        displayName: "localStorage",
+      },
+    ]
+    return globalInfo
+  },
+)
+
+export const getExecutionWidgetLayoutInfo = createSelector(
+  [getExecution],
+  (execution) => {
+    return execution.widgetsLayoutInfo
+  },
+)
+
+// export const getAllComponentsWithRealShapeSelectorOnlyUseInWSAsync = (
+//   state: RootState,
+// ) => {
+//   const canvas = state.currentApp.editor.components
+//   if (!canvas) return []
+//   const allComponents = flattenDslToArray(canvas)
+//   const widgetsLayoutInfo = state.currentApp.execution.widgetsLayoutInfo
+
+//   let childrenNodes = allComponents ? cloneDeep(allComponents) : []
+//   if (Array.isArray(childrenNodes)) {
+//     const mergedChildrenNode = batchMergeLayoutInfoToComponent(
+//       widgetsLayoutInfo,
+//       childrenNodes,
+//     )
+//     childrenNodes = cloneDeep(mergedChildrenNode)
+//   } else {
+//     childrenNodes = []
+//   }
+//   return childrenNodes
+// }
+
+export const getAllComponentsWithRealShapeSelector = createSelector(
+  [getFlattenArrayComponentNodes, getExecutionWidgetLayoutInfo],
+  (allComponentNodes, widgetsLayoutInfo) => {
+    let childrenNodes = allComponentNodes ? cloneDeep(allComponentNodes) : []
+    if (Array.isArray(childrenNodes)) {
+      const mergedChildrenNode = batchMergeLayoutInfoToComponent(
+        widgetsLayoutInfo,
+        childrenNodes,
+      )
+      childrenNodes = cloneDeep(mergedChildrenNode)
+    } else {
+      childrenNodes = []
+    }
+    return childrenNodes
+  },
+)

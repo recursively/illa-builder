@@ -50,14 +50,30 @@ export const generatorTableEventHandlerConfig = (
             value: "showNotification",
           },
           {
+            label: i18n.t("editor.inspect.setter_label.copy_to_clipboard"),
+            value: "copyToClipboard",
+          },
+          {
             label: i18n.t("editor.inspect.setter_label.set_router"),
             value: "setRouter",
+          },
+          {
+            label: i18n.t("editor.method.file_download.download"),
+            value: "downloadFile",
+          },
+          {
+            label: i18n.t("editor.method.setGlobalData"),
+            value: "setGlobalState",
+          },
+          {
+            label: i18n.t("editor.method.setLocalStorage"),
+            value: "setLocalStorage",
           },
         ],
       },
       {
         id: `${baseWidgetName}-interaction-event-handler-query`,
-        labelName: "Query",
+        labelName: i18n.t("editor.inspect.setter_label.action_name"),
         setterType: "EVENT_TARGET_ACTION_SELECT_SETTER",
         attrName: "queryID",
         bindAttrName: ["actionType"],
@@ -98,10 +114,21 @@ export const generatorTableEventHandlerConfig = (
         shown: (widgetMethod) => widgetMethod === "setValue",
       },
       {
+        id: `${baseWidgetName}-interaction-event-handler-selectValue`,
+        labelName: i18n.t("editor.inspect.setter_label.value"),
+        placeholder: i18n.t(
+          "editor.inspect.setter_placeholder.multiselect.value",
+        ),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        attrName: "widgetTargetValue",
+        bindAttrName: ["widgetMethod"],
+        shown: (widgetMethod) => widgetMethod === "setSelectedValue",
+      },
+      {
         id: `${baseWidgetName}-interaction-event-handler-setHidden`,
         labelName: i18n.t("editor.inspect.setter_label.hidden"),
         setterType: "DYNAMIC_SWITCH_SETTER",
-        attrName: "widgetTargetValue",
+        attrName: "widgetSwitchTargetValue",
         bindAttrName: ["widgetMethod"],
         useCustomLayout: true,
         openDynamic: true,
@@ -111,8 +138,8 @@ export const generatorTableEventHandlerConfig = (
         id: `${baseWidgetName}-interaction-event-handler-setDisabled`,
         labelName: i18n.t("editor.inspect.setter_label.disabled"),
         setterType: "DYNAMIC_SWITCH_SETTER",
-        // expectedType: VALIDATION_TYPES.BOOLEAN,
-        attrName: "widgetTargetValue",
+        expectedType: VALIDATION_TYPES.BOOLEAN,
+        attrName: "widgetSwitchTargetValue",
         bindAttrName: ["widgetMethod"],
         useCustomLayout: true,
         openDynamic: true,
@@ -136,7 +163,7 @@ export const generatorTableEventHandlerConfig = (
       },
       {
         id: `${baseWidgetName}-interaction-event-handler-setPrimaryValue`,
-        labelName: "setPrimaryValue",
+        labelName: i18n.t("editor.method.statistics.primary_value"),
         setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
         attrName: "widgetTargetValue",
         bindAttrName: ["widgetMethod"],
@@ -153,6 +180,14 @@ export const generatorTableEventHandlerConfig = (
         shown: (widgetMethod) => widgetMethod === "setImageUrl",
       },
       {
+        id: `${baseWidgetName}-interaction-event-handler-copiedValue`,
+        labelName: i18n.t("editor.inspect.setter_label.value"),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        attrName: "copiedValue",
+        bindAttrName: ["actionType"],
+        shown: (widgetMethod) => widgetMethod === "copyToClipboard",
+      },
+      {
         id: `${baseWidgetName}-interaction-event-handler-fileUrl`,
         labelName: i18n.t("editor.inspect.setter_label.file_url"),
         setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
@@ -167,6 +202,14 @@ export const generatorTableEventHandlerConfig = (
         attrName: "widgetTargetValue",
         bindAttrName: ["widgetMethod"],
         shown: (widgetMethod) => widgetMethod === "setVideoUrl",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-audioUrl`,
+        labelName: i18n.t("editor.inspect.setter_label.audio.audio_url"),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        attrName: "widgetTargetValue",
+        bindAttrName: ["widgetMethod"],
+        shown: (widgetMethod) => widgetMethod === "setAudioUrl",
       },
       {
         id: `${baseWidgetName}-interaction-event-handler-speed`,
@@ -205,9 +248,9 @@ export const generatorTableEventHandlerConfig = (
         setterType: "DYNAMIC_SWITCH_SETTER",
         useCustomLayout: true,
         openDynamic: true,
-        attrName: "widgetTargetValue",
+        attrName: "widgetSwitchTargetValue",
         bindAttrName: ["widgetMethod"],
-        // expectedType: VALIDATION_TYPES.BOOLEAN,
+        expectedType: VALIDATION_TYPES.BOOLEAN,
         shown: (widgetMethod) => widgetMethod === "setLoop",
       },
       {
@@ -216,9 +259,9 @@ export const generatorTableEventHandlerConfig = (
         setterType: "DYNAMIC_SWITCH_SETTER",
         useCustomLayout: true,
         openDynamic: true,
-        attrName: "widgetTargetValue",
+        attrName: "widgetSwitchTargetValue",
         bindAttrName: ["widgetMethod"],
-        // expectedType: VALIDATION_TYPES.BOOLEAN,
+        expectedType: VALIDATION_TYPES.BOOLEAN,
         shown: (widgetMethod) => widgetMethod === "mute",
       },
       {
@@ -227,10 +270,90 @@ export const generatorTableEventHandlerConfig = (
         setterType: "DYNAMIC_SWITCH_SETTER",
         useCustomLayout: true,
         openDynamic: true,
-        attrName: "widgetTargetValue",
+        attrName: "widgetSwitchTargetValue",
         bindAttrName: ["widgetMethod"],
-        // expectedType: VALIDATION_TYPES.BOOLEAN,
+        expectedType: VALIDATION_TYPES.BOOLEAN,
         shown: (widgetMethod) => widgetMethod === "showControls",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-select-state`,
+        labelName: i18n.t("editor.inspect.setter_label.name"),
+        setterType: "EVENT_TARGET_STATE_SELECT_SETTER",
+        attrName: "stateDisplayName",
+        bindAttrName: ["actionType"],
+        shown: (type) => type === "setGlobalState",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-state-method`,
+        labelName: i18n.t("editor.inspect.setter_label.method"),
+        setterType: "BASE_SELECT_SETTER",
+        attrName: "globalStateMethod",
+        bindAttrName: ["stateDisplayName"],
+        shown: (stateDisplayName) => !!stateDisplayName,
+        options: [
+          {
+            label: "Set In",
+            value: "setIn",
+          },
+          {
+            label: "Set Value",
+            value: "setValue",
+          },
+        ],
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-stateKey`,
+        labelName: i18n.t("editor.inspect.setter_label.variable.path_of_value"),
+        labelDesc: i18n.t(
+          "editor.inspect.setter_tips.variable.available_in_objects",
+        ),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        attrName: "globalStateKeyPath",
+        bindAttrName: ["globalStateMethod"],
+        shown: (globalStateMethod) => globalStateMethod === "setIn",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-stateValue`,
+        labelName: i18n.t("editor.inspect.setter_label.value"),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        attrName: "globalStateValue",
+        bindAttrName: ["globalStateMethod"],
+        shown: (globalStateMethod) =>
+          globalStateMethod === "setValue" || globalStateMethod === "setIn",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-storage-method`,
+        labelName: i18n.t("editor.inspect.setter_label.method"),
+        setterType: "BASE_SELECT_SETTER",
+        attrName: "localStorageMethod",
+        bindAttrName: ["actionType"],
+        shown: (type) => type === "setLocalStorage",
+        options: [
+          {
+            label: "Clear",
+            value: "clear",
+          },
+          {
+            label: "Set Value",
+            value: "setValue",
+          },
+        ],
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-localStorageKey`,
+        labelName: i18n.t("editor.inspect.setter_label.key"),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        attrName: "localStorageKey",
+        bindAttrName: ["localStorageMethod"],
+        shown: (localStorageMethod) => localStorageMethod === "setValue",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-localStorageValue`,
+        labelName: i18n.t("editor.inspect.setter_label.value"),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        attrName: "localStorageValue",
+        bindAttrName: ["localStorageMethod"],
+        shown: (localStorageMethod) => localStorageMethod === "setValue",
       },
       {
         id: `${baseWidgetName}-interaction-event-handler-disabled`,
@@ -411,6 +534,87 @@ export const generatorTableEventHandlerConfig = (
         expectedType: VALIDATION_TYPES.NUMBER,
         placeholder: "{{4500}}",
         shown: (type) => type === "showNotification",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-fileName`,
+        labelName: i18n.t(
+          "editor.inspect.setter_label.file_download.file_name",
+        ),
+        placeholder: i18n.t(
+          "editor.inspect.setter_placeholder.file_download.file_name",
+        ),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        // expectedType: VALIDATION_TYPES.STRING,
+        attrName: "fileName",
+        bindAttrName: ["actionType"],
+        shown: (type) => type === "downloadFile",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-fileData`,
+        labelName: i18n.t(
+          "editor.inspect.setter_label.file_download.file_data",
+        ),
+        labelDesc: i18n.t("editor.inspect.setter_tips.file_download.file_data"),
+        placeholder: i18n.t(
+          "editor.inspect.setter_placeholder.file_download.file_data",
+        ),
+        setterType: "TABLE_MAPPED_VALUE_INPUT_SETTER",
+        // expectedType: VALIDATION_TYPES.STRING,
+        attrName: "fileData",
+        bindAttrName: ["actionType"],
+        shown: (type) => type === "downloadFile",
+      },
+      {
+        id: `${baseWidgetName}-interaction-event-handler-fileType`,
+        labelName: i18n.t(
+          "editor.inspect.setter_label.file_download.file_type",
+        ),
+        setterType: "BASE_SELECT_SETTER",
+        expectedType: VALIDATION_TYPES.STRING,
+        attrName: "fileType",
+        bindAttrName: ["actionType"],
+        defaultValue: "auto",
+        shown: (type) => type === "downloadFile",
+        options: [
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.auto"),
+            value: "auto",
+          },
+          {
+            label: i18n.t(
+              "editor.inspect.setter_option.file_download.plain_text",
+            ),
+            value: "txt",
+          },
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.jpeg"),
+            value: "jpeg",
+          },
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.png"),
+            value: "png",
+          },
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.svg"),
+            value: "svg",
+          },
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.json"),
+            value: "json",
+          },
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.csv"),
+            value: "csv",
+          },
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.tsv"),
+            value: "tsv",
+          },
+          {
+            label: i18n.t("editor.inspect.setter_option.file_download.excel"),
+            value: "xlsx",
+          },
+        ],
       },
       {
         id: `${baseWidgetName}-interaction-event-handler-enabled`,

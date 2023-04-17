@@ -4,7 +4,7 @@ import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSelector } from "react-redux"
 import useMeasure from "react-use-measure"
 import { Pagination } from "@illa-design/react"
-import { UNIT_HEIGHT } from "@/page/App/components/DotPanel/renderComponentCanvas"
+import { UNIT_HEIGHT } from "@/page/App/components/DotPanel/constant/canvas"
 import {
   applyBarHandlerStyle,
   applyBarPointerStyle,
@@ -118,8 +118,12 @@ const RenderTemplateContainer: FC<RenderTemplateContainerProps> = (props) => {
 }
 
 const RenderCopyContainer: FC<RenderCopyContainerProps> = (props) => {
-  const { templateComponentNodes, templateContainerHeight, blockColumns } =
-    props
+  const {
+    templateComponentNodes,
+    templateContainerHeight,
+    blockColumns,
+    displayNamePrefix,
+  } = props
   return (
     <BasicContainerWithJSON
       componentNode={templateComponentNodes}
@@ -128,6 +132,7 @@ const RenderCopyContainer: FC<RenderCopyContainerProps> = (props) => {
       padding={8}
       addedRowNumber={0}
       blockColumns={blockColumns}
+      displayNamePrefix={displayNamePrefix}
     />
   )
 }
@@ -300,6 +305,7 @@ export const ListWidgetWithPagination: FC<ListWidgetPropsWithChildrenNodes> = (
                 templateComponentNodes={node}
                 templateContainerHeight={itemHeight}
                 blockColumns={blockColumns}
+                displayNamePrefix={`list-child-${index}-`}
               />
             </div>
           )
@@ -442,6 +448,7 @@ export const ListWidgetWithScroll: FC<ListWidgetPropsWithChildrenNodes> = (
               templateComponentNodes={node}
               templateContainerHeight={itemHeight}
               blockColumns={blockColumns}
+              displayNamePrefix={`list-child-${index}-`}
             />
           </div>
         )

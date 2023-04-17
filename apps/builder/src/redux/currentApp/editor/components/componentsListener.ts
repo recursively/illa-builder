@@ -1,5 +1,5 @@
 import { AnyAction, Unsubscribe, isAnyOf } from "@reduxjs/toolkit"
-import { cloneDeep, get, toPath } from "lodash"
+import { cloneDeep } from "lodash"
 import {
   applyEffectMapToComponentNodes,
   getNearComponentNodes,
@@ -7,8 +7,9 @@ import {
 } from "@/page/App/components/DotPanel/calc"
 import { configActions } from "@/redux/config/configSlice"
 import { actionActions } from "@/redux/currentApp/action/actionSlice"
-import { updateCurrentAllComponentsAttachedUsers } from "@/redux/currentApp/collaborators/collaboratorsHandlers"
+import { handleClearSelectedComponentExecution } from "@/redux/currentApp/collaborators/collaboratorsHandlers"
 import {
+  getAllComponentDisplayNameMapProps,
   getCanvas,
   getCurrentPageBodySectionComponentsSelector,
   getCurrentPageFooterSectionComponentsSelector,
@@ -20,7 +21,7 @@ import {
 import { componentsActions } from "@/redux/currentApp/editor/components/componentsSlice"
 import {
   getExecutionResult,
-  getIndependenciesMap,
+  getInDependenciesMap,
   getRawTree,
 } from "@/redux/currentApp/executionTree/executionSelector"
 import { executionActions } from "@/redux/currentApp/executionTree/executionSlice"
@@ -30,6 +31,7 @@ import {
   BASIC_BLOCK_COLUMNS,
   LEFT_OR_RIGHT_DEFAULT_COLUMNS,
 } from "@/utils/generators/generatePageOrSectionConfig"
+import { cursorActions } from "../../cursor/cursorSlice"
 import { UpdateComponentNodeLayoutInfoPayload } from "./componentsPayload"
 import { CONTAINER_TYPE, ComponentNode } from "./componentsState"
 
@@ -42,7 +44,6 @@ function handleUpdateComponentDisplayNameEffect(
   const { newDisplayName } = action.payload
   const rootState = listenApi.getState()
   const rootNode = getCanvas(rootState)
-  const componentsAttachedUsers = rootState.currentApp.collaborators.components
   const newComponent = searchDsl(rootNode, newDisplayName)
   if (
     newComponent &&
@@ -50,10 +51,6 @@ function handleUpdateComponentDisplayNameEffect(
   ) {
     listenApi.dispatch(
       configActions.updateSelectedComponent([newComponent.displayName]),
-    )
-    updateCurrentAllComponentsAttachedUsers(
-      [newComponent.displayName],
-      componentsAttachedUsers,
     )
   }
 }
@@ -325,6 +322,7 @@ const updateComponentReflowComponentsAdapter = (
     | typeof componentsActions.updateComponentContainerReducer
     | typeof componentsActions.updateComponentLayoutInfoReducer
     | typeof componentsActions.copyComponentReducer
+    | typeof componentsActions.batchUpdateComponentLayoutInfoReducer
   >,
 ) => {
   switch (action.type) {
@@ -352,6 +350,16 @@ const updateComponentReflowComponentsAdapter = (
       return action.payload.map((slice) => {
         return slice.newComponentNode
       })
+    }
+    case "components/batchUpdateComponentLayoutInfoReducer": {
+      return action.payload.map((slice) => ({
+        displayName: slice.displayName,
+        x: slice.layoutInfo.x,
+        y: slice.layoutInfo.y,
+        w: slice.layoutInfo.w,
+        h: slice.layoutInfo.h,
+        parentNode: slice.options?.parentNode,
+      })) as ComponentNode[]
     }
     default:
       return []
@@ -405,7 +413,9 @@ function handleUpdateComponentReflowEffect(
     })
   })
   listenApi.dispatch(
-    componentsActions.batchUpdateComponentLayoutInfoReducer(updateSlice),
+    componentsActions.batchUpdateComponentLayoutInfoWhenReflowReducer(
+      updateSlice,
+    ),
   )
 }
 
@@ -477,7 +487,7 @@ const handleUpdateDisplayNameEffect = (
 ) => {
   const { displayName, newDisplayName } = action.payload
   const rootState = listenerApi.getState()
-  const independenciesMap = getIndependenciesMap(rootState)
+  const independenciesMap = getInDependenciesMap(rootState)
   const seeds = getRawTree(rootState)
 
   const { updateActionSlice, updateWidgetSlice } = changeDisplayNameHelper(
@@ -488,6 +498,13 @@ const handleUpdateDisplayNameEffect = (
   )
 
   listenerApi.dispatch(
+    executionActions.updateWidgetLayoutInfoWhenChangeDisplayNameReducer({
+      oldDisplayName: displayName,
+      newDisplayName,
+    }),
+  )
+
+  listenerApi.dispatch(
     componentsActions.batchUpdateMultiComponentSlicePropsReducer(
       updateWidgetSlice,
     ),
@@ -495,6 +512,85 @@ const handleUpdateDisplayNameEffect = (
   listenerApi.dispatch(
     actionActions.batchUpdateMultiActionSlicePropsReducer(updateActionSlice),
   )
+}
+
+const handleUpdateGlobalDataDisplayNameEffect = (
+  action: ReturnType<typeof componentsActions.setGlobalStateReducer>,
+  listenerApi: AppListenerEffectAPI,
+) => {
+  const { key, oldKey } = action.payload
+  if (!oldKey) return
+  const rootState = listenerApi.getState()
+  const independenciesMap = getInDependenciesMap(rootState)
+  const seeds = getRawTree(rootState)
+  const { updateActionSlice, updateWidgetSlice } = changeDisplayNameHelper(
+    independenciesMap,
+    seeds,
+    oldKey,
+    key,
+    "globalDataKey",
+  )
+
+  listenerApi.dispatch(
+    componentsActions.batchUpdateMultiComponentSlicePropsReducer(
+      updateWidgetSlice,
+    ),
+  )
+  listenerApi.dispatch(
+    actionActions.batchUpdateMultiActionSlicePropsReducer(updateActionSlice),
+  )
+}
+
+const handlerUpdateViewportSizeEffect = (
+  action: ReturnType<typeof componentsActions.updateViewportSizeReducer>,
+  listenApi: AppListenerEffectAPI,
+) => {
+  listenApi.dispatch(cursorActions.resetCursorReducer())
+}
+
+const getAllChildrenDisplayName = (
+  nodeDisplayName: string,
+  displayNameMapProps: Record<string, any>,
+): string[] => {
+  let result = [nodeDisplayName]
+  const node = displayNameMapProps[nodeDisplayName]
+  const children: string[] = node?.$childrenNode || []
+  if (children.length > 0) {
+    children.forEach((child) => {
+      result = [
+        ...result,
+        ...getAllChildrenDisplayName(child, displayNameMapProps),
+      ]
+    })
+  }
+  return result
+}
+
+const batchUpdateComponentStatusInfoEffect = (
+  action: ReturnType<
+    typeof componentsActions.batchUpdateComponentStatusInfoReducer
+  >,
+  listenApi: AppListenerEffectAPI,
+) => {
+  const { payload } = action
+  let allChildrenDisplayName: string[] = []
+  const displayNameMapProps =
+    getAllComponentDisplayNameMapProps(listenApi.getState()) ?? {}
+  payload.forEach((updateSlice) => {
+    if (
+      updateSlice.statusInfo.isDragging ||
+      updateSlice.statusInfo.isResizing
+    ) {
+      allChildrenDisplayName = [
+        ...allChildrenDisplayName,
+        ...getAllChildrenDisplayName(
+          updateSlice.displayName,
+          displayNameMapProps,
+        ),
+      ]
+    }
+  })
+  listenApi.dispatch(cursorActions.filterCursorReducer(allChildrenDisplayName))
 }
 
 export function setupComponentsListeners(
@@ -511,12 +607,17 @@ export function setupComponentsListeners(
         componentsActions.addComponentReducer,
         componentsActions.updateComponentLayoutInfoReducer,
         componentsActions.copyComponentReducer,
+        componentsActions.batchUpdateComponentLayoutInfoReducer,
       ),
       effect: handleUpdateComponentReflowEffect,
     }),
     startListening({
       actionCreator: componentsActions.deletePageNodeReducer,
       effect: handleChangeCurrentPageWhenDelete,
+    }),
+    startListening({
+      actionCreator: componentsActions.deleteComponentNodeReducer,
+      effect: handleClearSelectedComponentExecution,
     }),
     startListening({
       actionCreator: componentsActions.deleteSectionViewReducer,
@@ -533,6 +634,18 @@ export function setupComponentsListeners(
     startListening({
       actionCreator: componentsActions.updateComponentDisplayNameReducer,
       effect: handleUpdateDisplayNameEffect,
+    }),
+    startListening({
+      actionCreator: componentsActions.setGlobalStateReducer,
+      effect: handleUpdateGlobalDataDisplayNameEffect,
+    }),
+    startListening({
+      actionCreator: componentsActions.updateViewportSizeReducer,
+      effect: handlerUpdateViewportSizeEffect,
+    }),
+    startListening({
+      actionCreator: componentsActions.batchUpdateComponentStatusInfoReducer,
+      effect: batchUpdateComponentStatusInfoEffect,
     }),
   ]
 

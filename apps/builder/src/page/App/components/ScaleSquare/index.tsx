@@ -15,7 +15,9 @@ import { MoveBar } from "@/page/App/components/ScaleSquare/moveBar"
 import {
   applyDashedLineStyle,
   applyWrapperPendingStyle,
+  hoverHotspotStyle,
 } from "@/page/App/components/ScaleSquare/style"
+import { changeSelectedDisplayName } from "@/page/App/components/ScaleSquare/utils/changeSelectedDisplayName"
 import {
   getHoveredComponents,
   getIsDragging,
@@ -26,36 +28,60 @@ import {
   isShowDot,
 } from "@/redux/config/configSelector"
 import { configActions } from "@/redux/config/configSlice"
-import { updateCurrentAllComponentsAttachedUsers } from "@/redux/currentApp/collaborators/collaboratorsHandlers"
 import {
   getComponentAttachUsers,
   getTargetCurrentUsersExpendMe,
 } from "@/redux/currentApp/collaborators/collaboratorsSelector"
 import { CollaboratorsInfo } from "@/redux/currentApp/collaborators/collaboratorsState"
-import { getFlattenArrayComponentNodes } from "@/redux/currentApp/editor/components/componentsSelector"
+import {
+  RelationMap,
+  getComponentDisplayNameMapDepth,
+  getShowWidgetNameParentMap,
+} from "@/redux/currentApp/editor/components/componentsSelector"
 import { componentsActions } from "@/redux/currentApp/editor/components/componentsSlice"
 import { ComponentNode } from "@/redux/currentApp/editor/components/componentsState"
 import {
+  getAllComponentsWithRealShapeSelector,
   getExecutionError,
   getExecutionResult,
+  getExecutionWidgetLayoutInfo,
 } from "@/redux/currentApp/executionTree/executionSelector"
 import { getCurrentUser } from "@/redux/currentUser/currentUserSelector"
 import store, { RootState } from "@/store"
 import { CopyManager } from "@/utils/copyManager"
-import {
-  batchMergeLayoutInfoToComponent,
-  endDrag,
-  mergeLayoutInfoToComponent,
-  startDrag,
-} from "@/utils/drag/drag"
+import { endDragMultiNodes, startDragMultiNodes } from "@/utils/drag/drag"
 import { FocusManager } from "@/utils/focusManager"
 import { ShortCutContext } from "@/utils/shortcut/shortcutProvider"
+import { isMAC } from "@/utils/userAgent"
 import { AutoHeightWithLimitedContainer } from "@/widgetLibrary/PublicSector/AutoHeightWithLimitedContainer"
 import { TransformWidgetWrapper } from "@/widgetLibrary/PublicSector/TransformWidgetWrapper"
+import { illaSnapshot } from "../DotPanel/constant/snapshot"
+import {
+  sendMousePositionHandler,
+  sendShadowMessageHandler,
+} from "../DotPanel/utils/sendBinaryMessage"
 import { ResizingContainer } from "./ResizingContainer"
 import { getRealShapeAndPosition } from "./utils/getRealShapeAndPosition"
 import { useDisplayNameInMoveBarSelector } from "./utils/useGetDisplayNameInMoveBar"
 import { useMouseHover } from "./utils/useMouseHover"
+
+const getRelativeRelation = (
+  selectedComponents: string[],
+  currentDisplayName: string,
+  relationMap: RelationMap,
+): { parentNode: string; childrenNode: string[]; containerType: string } => {
+  const relation = relationMap[currentDisplayName]
+  if (!relation) return relation
+
+  if (!selectedComponents.includes(relation.parentNode)) {
+    return getRelativeRelation(
+      selectedComponents,
+      relation.parentNode,
+      relationMap,
+    )
+  }
+  return relation
+}
 
 export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
   const {
@@ -66,6 +92,7 @@ export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
     containerHeight,
     collisionEffect,
     blockColumns,
+    childrenNode,
   } = props
 
   const shortcut = useContext(ShortCutContext)
@@ -78,22 +105,23 @@ export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
   const { w, y, h } = getRealShapeAndPosition(componentNode, unitH, unitW)
 
   const executionResult = useSelector(getExecutionResult)
+  const widgetExecutionLayoutInfo = useSelector(getExecutionWidgetLayoutInfo)
   const isDraggingStateInGlobal = useSelector(getIsDragging)
   const isResizingStateInGlobal = useSelector(getIsResizing)
   const isShowCanvasDot = useSelector(isShowDot)
   const hoveredComponents = useSelector(getHoveredComponents)
+  const displayNameMapDepth = useSelector(getComponentDisplayNameMapDepth)
+  const widgetDisplayNameRelationMap = useSelector(getShowWidgetNameParentMap)
   const isMouseOver =
     hoveredComponents[hoveredComponents.length - 1] ===
     componentNode.displayName
-  const componentsAttachedUsers = useSelector(
-    getComponentAttachUsers,
-  ) as Record<string, CollaboratorsInfo[]>
 
   const filteredComponentAttachedUserList = useSelector<
     RootState,
     CollaboratorsInfo[]
   >((rootState) => {
-    const currentUserID = getCurrentUser(rootState).userId
+    const currentUserInfo = getCurrentUser(rootState)
+    const currentUserID = currentUserInfo.userId
     const componentsAttachedUsers = getComponentAttachUsers(rootState)
     return getTargetCurrentUsersExpendMe(
       componentsAttachedUsers,
@@ -140,9 +168,9 @@ export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
       FocusManager.switchFocus("canvas")
       if (!isEditMode) return
       e.stopPropagation()
-      if (e.metaKey || e.shiftKey) {
-        const currentSelectedDisplayName = cloneDeep(selectedComponents)
 
+      if ((isMAC() && e.metaKey) || e.shiftKey || (!isMAC() && e.ctrlKey)) {
+        let currentSelectedDisplayName = cloneDeep(selectedComponents)
         const index = currentSelectedDisplayName.findIndex(
           (displayName) => displayName === componentNode.displayName,
         )
@@ -151,31 +179,60 @@ export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
         } else {
           currentSelectedDisplayName.push(componentNode.displayName)
         }
+
+        changeSelectedDisplayName(
+          currentSelectedDisplayName,
+          widgetDisplayNameRelationMap,
+          componentNode.displayName,
+          displayNameMapDepth,
+        )
+        if (currentSelectedDisplayName.length > 1) {
+          const firstParentNode =
+            widgetExecutionLayoutInfo[currentSelectedDisplayName[0]].parentNode
+          const isSameParentNode = currentSelectedDisplayName.every(
+            (displayName) => {
+              const parentNode =
+                widgetExecutionLayoutInfo[displayName].parentNode
+              return parentNode === firstParentNode
+            },
+          )
+          if (!isSameParentNode) {
+            const lastParentNode =
+              widgetExecutionLayoutInfo[
+                currentSelectedDisplayName[
+                  currentSelectedDisplayName.length - 1
+                ]
+              ].parentNode
+            currentSelectedDisplayName = currentSelectedDisplayName.filter(
+              (displayName) => {
+                const currentParentNode =
+                  widgetExecutionLayoutInfo[displayName].parentNode
+                return lastParentNode === currentParentNode
+              },
+            )
+          }
+        }
+
+        currentSelectedDisplayName = Array.from(
+          new Set(currentSelectedDisplayName),
+        )
         dispatch(
           configActions.updateSelectedComponent(currentSelectedDisplayName),
         )
-        updateCurrentAllComponentsAttachedUsers(
-          currentSelectedDisplayName,
-          componentsAttachedUsers,
-        )
-
         return
       }
-      updateCurrentAllComponentsAttachedUsers(
-        [componentNode.displayName],
-        componentsAttachedUsers,
-      )
-
       dispatch(
         configActions.updateSelectedComponent([componentNode.displayName]),
       )
     },
     [
       componentNode.displayName,
-      componentsAttachedUsers,
       dispatch,
+      displayNameMapDepth,
       isEditMode,
       selectedComponents,
+      widgetDisplayNameRelationMap,
+      widgetExecutionLayoutInfo,
     ],
   )
 
@@ -203,35 +260,51 @@ export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
       type: "components",
       canDrag: isEditMode && !isResizingStateInGlobal,
       end: (draggedItem, monitor) => {
+        sendShadowMessageHandler(-1, "", [], 0, 0, 0, 0, 0, 0, 0, 0)
         const dropResultInfo = monitor.getDropResult()
-        endDrag(draggedItem.item, dropResultInfo?.isDropOnCanvas ?? false)
+        const { draggedSelectedComponents } = draggedItem
+        endDragMultiNodes(
+          draggedSelectedComponents,
+          dropResultInfo?.isDropOnCanvas ?? false,
+          false,
+        )
       },
       item: () => {
         const rootState = store.getState()
-        const allComponentNodes = getFlattenArrayComponentNodes(rootState)
-        const executionResult = getExecutionResult(rootState)
-        let childrenNodes = allComponentNodes
-          ? cloneDeep(allComponentNodes)
-          : []
-        if (Array.isArray(childrenNodes)) {
-          const mergedChildrenNode = batchMergeLayoutInfoToComponent(
-            executionResult,
-            childrenNodes,
-          )
-          childrenNodes = cloneDeep(mergedChildrenNode)
-        } else {
-          childrenNodes = []
-        }
-        const itemLayoutInfo =
-          executionResult[componentNode.displayName]?.$layoutInfo
-        const mergedItem: ComponentNode = mergeLayoutInfoToComponent(
-          itemLayoutInfo,
-          componentNode,
+        let childrenNodes = getAllComponentsWithRealShapeSelector(rootState)
+        illaSnapshot.setSnapshot(childrenNodes)
+        let draggedSelectedComponents: ComponentNode[]
+        const relativeRelation = getRelativeRelation(
+          selectedComponents,
+          componentNode.displayName,
+          widgetDisplayNameRelationMap,
         )
-        startDrag(mergedItem)
+        if (
+          selectedComponents.length > 1 &&
+          (selectedComponents.includes(componentNode.displayName) ||
+            !!relativeRelation)
+        ) {
+          draggedSelectedComponents = childrenNodes.filter((node) =>
+            selectedComponents.includes(node.displayName),
+          )
+        } else {
+          draggedSelectedComponents = childrenNodes.filter(
+            (node) => node.displayName === componentNode.displayName,
+          )
+        }
+        let findDisplayName = componentNode.displayName
+        if (!!relativeRelation && selectedComponents.length > 1) {
+          findDisplayName = relativeRelation.parentNode
+        }
+        const mergedItem = childrenNodes.find((node) => {
+          return node.displayName === findDisplayName
+        })!
+        startDragMultiNodes(draggedSelectedComponents, false)
+        sendMousePositionHandler(componentNode.parentNode!, 0, 0, 0, 0, true)
+
         return {
           item: mergedItem,
-          childrenNodes,
+          draggedSelectedComponents,
           currentColumnNumber: blockColumns,
         }
       },
@@ -241,7 +314,13 @@ export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
         }
       },
     }),
-    [componentNode, blockColumns, isEditMode, isResizingStateInGlobal],
+    [
+      componentNode,
+      blockColumns,
+      isEditMode,
+      isResizingStateInGlobal,
+      selectedComponents,
+    ],
   )
 
   const handleContextMenu = useCallback(
@@ -251,94 +330,98 @@ export const ScaleSquare = memo<ScaleSquareProps>((props: ScaleSquareProps) => {
       dispatch(
         configActions.updateSelectedComponent([componentNode.displayName]),
       )
-      updateCurrentAllComponentsAttachedUsers(
-        [componentNode.displayName],
-        componentsAttachedUsers,
-      )
     },
-    [componentNode.displayName, componentsAttachedUsers, dispatch],
+    [componentNode.displayName, dispatch],
   )
 
   const hasEditors = !!filteredComponentAttachedUserList.length
 
-  return isDragging ? null : (
+  return (
     <ResizingContainer
       unitW={unitW}
       unitH={unitH}
       componentNode={componentNode}
+      childrenNode={childrenNode}
+      isDragging={componentNode.isDragging}
     >
-      <Dropdown
-        disabled={!isEditMode}
-        position="right-start"
-        trigger="contextmenu"
-        dropList={
-          <DropList w="184px">
-            <DropListItem
-              value="duplicate"
-              title={t("editor.context_menu.duplicate")}
-              onClick={() => {
-                CopyManager.copyComponentNode([componentNode])
-                CopyManager.paste()
-              }}
-            />
-            <DropListItem
-              deleted
-              value="delete"
-              title={t("editor.context_menu.delete")}
-              onClick={() => {
-                shortcut.showDeleteDialog([componentNode.displayName])
-              }}
-            />
-          </DropList>
-        }
+      <div
+        css={hoverHotspotStyle}
+        data-displayname={componentNode.displayName}
+        data-parentnode={componentNode.parentNode}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
-        <div
-          className="wrapperPending"
-          css={applyWrapperPendingStyle(
-            hasEditors,
-            isSelected,
-            hasError,
-            isDragging,
-            isEditMode,
-            isOverLap,
-            isLikeProductionMode,
-            isMouseOver,
-          )}
-          onClick={handleOnSelection}
-          onContextMenu={handleContextMenu}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          ref={isEditMode ? dragRef : undefined}
-          data-displayname={componentNode.displayName}
+        <Dropdown
+          disabled={!isEditMode}
+          position="right-start"
+          trigger="contextmenu"
+          dropList={
+            <DropList w="184px">
+              <DropListItem
+                value="duplicate"
+                title={t("editor.context_menu.duplicate")}
+                onClick={() => {
+                  CopyManager.copyComponentNode([componentNode])
+                  CopyManager.paste()
+                }}
+              />
+              <DropListItem
+                deleted
+                value="delete"
+                title={t("editor.context_menu.delete")}
+                onClick={() => {
+                  shortcut.showDeleteDialog([componentNode.displayName])
+                }}
+              />
+            </DropList>
+          }
         >
-          <MoveBar
-            isError={hasError}
-            isMouseOver={isMouseOver}
-            displayName={displayNameInMoveBar}
-            maxWidth={w}
-            selected={isSelected}
-            widgetTop={y}
-            widgetHeight={h}
-            containerPadding={containerPadding || 0}
-            containerHeight={containerHeight}
-            widgetType={componentNode.type}
-            userList={filteredComponentAttachedUserList}
-          />
-          <TransformWidgetWrapper
-            componentNode={componentNode}
-            blockColumns={blockColumns}
-          />
-          {canRenderDashedLine && (
-            <div
-              css={applyDashedLineStyle(
-                isSelected,
-                isShowCanvasDot,
-                isDragging,
-              )}
+          <div
+            className="wrapperPending"
+            css={applyWrapperPendingStyle(
+              hasEditors,
+              isSelected,
+              hasError,
+              isDragging,
+              isEditMode,
+              isOverLap,
+              isLikeProductionMode,
+              isMouseOver,
+            )}
+            onClick={handleOnSelection}
+            onContextMenu={handleContextMenu}
+            ref={isEditMode ? dragRef : undefined}
+          >
+            <MoveBar
+              isError={hasError}
+              isMouseOver={isMouseOver}
+              displayName={displayNameInMoveBar}
+              maxWidth={w}
+              selected={isSelected}
+              widgetTop={y}
+              widgetHeight={h}
+              containerPadding={containerPadding || 0}
+              containerHeight={containerHeight}
+              widgetType={componentNode.type}
+              userList={filteredComponentAttachedUserList}
             />
-          )}
-        </div>
-      </Dropdown>
+            <TransformWidgetWrapper
+              componentNode={componentNode}
+              blockColumns={blockColumns}
+            />
+            {canRenderDashedLine && (
+              <div
+                css={applyDashedLineStyle(
+                  isSelected,
+                  isShowCanvasDot,
+                  isDragging,
+                )}
+              />
+            )}
+          </div>
+        </Dropdown>
+      </div>
+
       <div css={dragPreviewStyle} ref={dragPreviewRef} />
       {isEditMode &&
         selectedComponents?.length === 1 &&

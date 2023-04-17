@@ -5,7 +5,7 @@ import { getTeamsInfo } from "@/api/team"
 import { getCurrentUser } from "@/redux/currentUser/currentUserSelector"
 import { currentUserActions } from "@/redux/currentUser/currentUserSlice"
 import { UserInfoResponse } from "@/redux/currentUser/currentUserState"
-import { cloudUrl } from "@/router/routerConfig"
+import { cloudRedirect } from "@/router/routerConfig"
 import store from "@/store"
 import { getAuthToken } from "@/utils/auth"
 import { setLocalStorage } from "@/utils/storage"
@@ -28,7 +28,7 @@ export const getUserInfo = async (token?: string) => {
     store.dispatch(
       currentUserActions.updateCurrentUserReducer({
         ...response.data,
-        userId: response.data.id,
+        userId: response.data.userID,
       }),
     )
     return response.data
@@ -50,7 +50,7 @@ export const requireAuth = async (
   teamIdentifier?: string,
 ) => {
   const userInfo = getCurrentUser(store.getState())
-  const token = getAuthToken() || pathToken
+  const token = pathToken || getAuthToken()
   if (userInfo.userId) {
     return null
   }
@@ -67,11 +67,11 @@ export const requireAuth = async (
   if (!userInfo?.userId) {
     if (!token) {
       clearRequestPendingPool()
-      return redirect(cloudUrl)
+      return redirect(cloudRedirect)
     } else {
       const userInfo = await getUserInfo(token)
       if (!userInfo) {
-        return redirect(cloudUrl)
+        return redirect(cloudRedirect)
       }
     }
   }
